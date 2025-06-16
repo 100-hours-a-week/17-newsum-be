@@ -46,10 +46,11 @@ public class AiAuthor {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	public AiAuthor(String name, String style, String introduction, String profileImageUrl) {
+	public AiAuthor(String name, String style, String introduction, String profileImageUrl, LocalDateTime createdAt) {
 		this.name = name;
 		this.style = style;
 		this.introduction = introduction;
 		this.profileImageUrl = profileImageUrl != null ? profileImageUrl : "BASIC_PROFILE_IMAGE_URL";
+		this.createdAt = createdAt;
 	}
 }

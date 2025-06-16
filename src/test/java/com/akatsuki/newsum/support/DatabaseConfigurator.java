@@ -3,6 +3,7 @@ package com.akatsuki.newsum.support;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -149,21 +150,24 @@ public class DatabaseConfigurator {
 			"테스트 작가1",
 			"유머러스",
 			"재미있는 웹툰을 그립니다",
-			"https://example.com/author1.jpg"
+			"https://example.com/author1.jpg",
+			LocalDateTime.now()
 		);
 
 		AiAuthor aiAuthor2 = new AiAuthor(
 			"테스트 작가2",
 			"진지함",
 			"진지한 웹툰을 그립니다",
-			"https://example.com/author2.jpg"
+			"https://example.com/author2.jpg",
+			LocalDateTime.now()
 		);
 
 		AiAuthor aiAuthor3 = new AiAuthor(
 			"테스트 작가3",
 			"창의적",
 			"창의적인 웹툰을 그립니다",
-			"https://example.com/author3.jpg"
+			"https://example.com/author3.jpg",
+			LocalDateTime.now()
 		);
 
 		List<AiAuthor> authors = aiAuthorRepository.saveAll(List.of(aiAuthor1, aiAuthor2, aiAuthor3));

@@ -27,7 +27,8 @@ class WebtoonTest {
 			"테스트 작가",
 			"유머러스한 스타일",
 			"재미있는 웹툰을 그리는 AI 작가입니다.",
-			"https://example.com/profile.jpg"
+			"https://example.com/profile.jpg",
+			LocalDateTime.now()
 		);
 
 		webtoon = new Webtoon(
