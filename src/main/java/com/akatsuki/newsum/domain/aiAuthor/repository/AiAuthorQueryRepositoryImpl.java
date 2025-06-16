@@ -46,14 +46,14 @@ public class AiAuthorQueryRepositoryImpl implements AiAuthorQueryRepository {
 
 	@Override
 	public Set<Long> findSubscribedAuthorIdsByUserId(Long userId, List<Long> aiAuthorIds) {
-		QAuthorFavorite af = QAuthorFavorite.authorFavorite;
+		QAuthorFavorite fav = QAuthorFavorite.authorFavorite;
 
 		return queryFactory
-			.select(af.aiAuthor.id)
-			.from(af)
+			.select(fav.aiAuthor.id)
+			.from(fav)
 			.where(
-				af.userId.eq(userId),
-				af.aiAuthor.id.in(aiAuthorIds)
+				fav.userId.eq(userId),
+				fav.aiAuthor.id.in(aiAuthorIds)
 			)
 			.fetch()
 			.stream()
