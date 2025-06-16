@@ -37,7 +37,7 @@ public class AiAuthorController {
 		Long userId = getUserId(userDetails);
 		aiAuthorService.toggleSubscribe(userId, aiAuthorId);
 		return ResponseEntity.ok(
-			ApiResponse.success(ResponseCodeAndMessage.AI_AUTHOR_TOGGLE_SUCCESS, null)
+			ApiResponse.success(ResponseCodeAndMessage.AI_AUTHOR_SUBSCRIBE_TOGGLE_SUCCESS, null)
 		);
 	}
 
