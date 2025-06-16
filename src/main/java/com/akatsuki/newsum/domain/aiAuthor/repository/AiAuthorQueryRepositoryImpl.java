@@ -1,6 +1,7 @@
 package com.akatsuki.newsum.domain.aiAuthor.repository;
 
 import static com.akatsuki.newsum.domain.aiAuthor.entity.QAiAuthor.*;
+import static com.akatsuki.newsum.domain.user.entity.QAuthorFavorite.*;
 
 import java.util.List;
 import java.util.Set;
@@ -14,7 +15,6 @@ import com.akatsuki.newsum.common.pagination.model.query.QueryFragment;
 import com.akatsuki.newsum.common.pagination.query.registry.CursorPageQueryRegistry;
 import com.akatsuki.newsum.domain.aiAuthor.entity.AiAuthor;
 import com.akatsuki.newsum.domain.aiAuthor.entity.QAiAuthor;
-import com.akatsuki.newsum.domain.user.entity.QAuthorFavorite;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -46,14 +46,12 @@ public class AiAuthorQueryRepositoryImpl implements AiAuthorQueryRepository {
 
 	@Override
 	public Set<Long> findSubscribedAuthorIdsByUserId(Long userId, List<Long> aiAuthorIds) {
-		QAuthorFavorite fav = QAuthorFavorite.authorFavorite;
-
 		return queryFactory
-			.select(fav.aiAuthor.id)
-			.from(fav)
+			.select(authorFavorite.aiAuthor.id)
+			.from(authorFavorite)
 			.where(
-				fav.userId.eq(userId),
-				fav.aiAuthor.id.in(aiAuthorIds)
+				authorFavorite.userId.eq(userId),
+				authorFavorite.aiAuthor.id.in(aiAuthorIds)
 			)
 			.fetch()
 			.stream()
