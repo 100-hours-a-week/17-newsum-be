@@ -11,9 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akatsuki.newsum.common.dto.ErrorCodeAndMessage;
 import com.akatsuki.newsum.common.exception.BusinessException;
 import com.akatsuki.newsum.common.pagination.CursorPaginationService;
-import com.akatsuki.newsum.common.pagination.model.cursor.Cursor;
-import com.akatsuki.newsum.common.pagination.model.page.CursorPage;
-import com.akatsuki.newsum.common.pagination.model.page.PageInfo;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorDetailResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorListItemResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorListResponse;
@@ -54,9 +51,9 @@ public class AiAuthorService {
 		return toDetailResponse(author, webtoons, isSubscribed);
 	}
 
-	public AiAuthorListResponse getAuthorList(Long userId, Cursor cursor, int size) {
-		CursorPage<AiAuthor> page = findAiAuthors(cursor, size);
-		return buildAuthorListWithSubscribeStatus(userId, page.getItems(), page.getPageInfo());
+	public AiAuthorListResponse getAuthorList(Long userId) {
+		List<AiAuthor> authors = aiAuthorRepository.findAll();
+		return buildAuthorListWithSubscribeStatus(userId, authors);
 	}
 
 	private AiAuthor findAuthorById(Long aiAuthorId) {
@@ -96,11 +93,6 @@ public class AiAuthorService {
 			.toList();
 	}
 
-	private CursorPage<AiAuthor> findAiAuthors(Cursor cursor, int size) {
-		List<AiAuthor> authors = aiAuthorQueryRepository.findByCursorAndSize(cursor, size);
-		return cursorPaginationService.create(authors, size, cursor);
-	}
-
 	private Set<Long> getSubscribedAuthorIds(Long userId, List<Long> authorIds) {
 		if (userId == null) {
 			return Set.of();
@@ -110,8 +102,7 @@ public class AiAuthorService {
 
 	private AiAuthorListResponse buildAuthorListWithSubscribeStatus(
 		Long userId,
-		List<AiAuthor> authors,
-		PageInfo pageInfo
+		List<AiAuthor> authors
 	) {
 		List<Long> authorIds = authors.stream()
 			.map(AiAuthor::getId)
@@ -128,7 +119,7 @@ public class AiAuthorService {
 				subscribedIds.contains(author.getId())
 			)).toList();
 
-		return new AiAuthorListResponse(items, pageInfo);
+		return new AiAuthorListResponse(items);
 	}
 
 	private boolean isSubscribed(Long userId, Long aiAuthorId) {
