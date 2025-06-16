@@ -1,6 +1,5 @@
 package com.akatsuki.newsum.domain.aiAuthor.entity;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,9 +41,6 @@ public class AiAuthor {
 
 	@OneToMany(mappedBy = "aiAuthor", cascade = CascadeType.ALL)
 	private List<Webtoon> webtoons = new ArrayList<>();
-
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
 
 	public AiAuthor(String name, String style, String introduction, String profileImageUrl) {
 		this.name = name;
