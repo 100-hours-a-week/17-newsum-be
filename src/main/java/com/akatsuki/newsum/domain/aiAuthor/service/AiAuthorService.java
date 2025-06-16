@@ -120,12 +120,12 @@ public class AiAuthorService {
 		Set<Long> subscribedIds = getSubscribedAuthorIds(userId, authorIds);
 
 		List<AiAuthorListItemResponse> items = authors.stream()
+			.sorted(Comparator.comparing(AiAuthor::getName))
 			.map(author -> new AiAuthorListItemResponse(
 				author.getId(),
 				author.getName(),
 				author.getProfileImageUrl(),
-				author.getCreatedAt(),
-				subscribedIds.contains(author.getId()) // 구독 여부
+				subscribedIds.contains(author.getId())
 			)).toList();
 
 		return new AiAuthorListResponse(items, pageInfo);

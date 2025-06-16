@@ -48,7 +48,7 @@ public class AiAuthorController {
 		@AuthenticationPrincipal UserDetailsImpl userDetails
 
 	) {
-		Long userId = (userDetails != null) ? userDetails.getUserId() : null; //비로그인유저도 접근 가능하도록
+		Long userId = (userDetails != null) ? userDetails.getUserId() : null;
 		AiAuthorDetailResponse result = aiAuthorService.getAuthorDetail(userId, aiAuthorId);
 		return ResponseEntity.ok(
 			ApiResponse.success(ResponseCodeAndMessage.AI_AUTHOR_DETAIL_SUCCESS, result)
@@ -62,7 +62,7 @@ public class AiAuthorController {
 		@RequestParam(defaultValue = "10", required = false) Integer size,
 		@AuthenticationPrincipal UserDetailsImpl userDetails
 	) {
-		Long userId = (userDetails != null) ? userDetails.getUserId() : null; //비로그인유저도 접근 가능하도록
+		Long userId = (userDetails != null) ? userDetails.getUserId() : null;
 		AiAuthorListResponse response = aiAuthorService.getAuthorList(userId, cursor, size);
 		return ResponseEntity.ok(
 			ApiResponse.success(ResponseCodeAndMessage.AI_AUTHOR_LIST_SUCCESS, response)
