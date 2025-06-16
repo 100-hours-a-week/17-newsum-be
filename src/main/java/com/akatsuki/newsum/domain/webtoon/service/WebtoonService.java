@@ -374,7 +374,7 @@ public class WebtoonService {
 		List<Webtoon> webtoons = webtoonRepository.searchByUserKeywordBookmarks(query, cursor, size);
 
 		return webtoons.stream()
-			.map(WebtoonCardDto::from)
+			.map(this::mapToCardDto)
 			.toList();
 	}
 
