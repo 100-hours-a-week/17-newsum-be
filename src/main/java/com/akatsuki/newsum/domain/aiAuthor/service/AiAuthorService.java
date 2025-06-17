@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.akatsuki.newsum.common.dto.ErrorCodeAndMessage;
 import com.akatsuki.newsum.common.exception.BusinessException;
-import com.akatsuki.newsum.common.pagination.CursorPaginationService;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorBookmarkedResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorDetailResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorListItemResponse;
@@ -33,7 +32,6 @@ public class AiAuthorService {
 	private final AiAuthorFavoriteRepository aiAuthorFavoriteRepository;
 	private final AiAuthorRepository aiAuthorRepository;
 	private final AiAuthorQueryRepository aiAuthorQueryRepository;
-	private final CursorPaginationService cursorPaginationService;
 
 	public void toggleSubscribe(Long userId, Long aiAuthorId) {
 		AiAuthor author = findAuthorById(aiAuthorId);
@@ -71,7 +69,6 @@ public class AiAuthorService {
 		return aiAuthorFavoriteRepository.findByUserIdAndAiAuthorId(userId, aiAuthorId);
 	}
 
-	//유저아이디 기반으로 구독한 작가목록들 가져오기
 	private List<AuthorFavorite> findAuthorFavoritebyuserId(Long userId) {
 		return aiAuthorFavoriteRepository.findAiAuthorsByUserId(userId);
 	}
