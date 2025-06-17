@@ -61,7 +61,8 @@ public enum ResponseCodeAndMessage {
 	//AI작가 북마크 관련 성공 응답
 	AI_AUTHOR_SUBSCRIBE_TOGGLE_SUCCESS(HttpStatus.OK.value(), "AI작가 구독 상태가 변경되었습니다."),
 	AI_AUTHOR_DETAIL_SUCCESS(HttpStatus.OK.value(), "AI작가 상세 조회에 성공했습니다."),
-	AI_AUTHOR_LIST_SUCCESS(HttpStatus.OK.value(), "AI작가 목록 조회에 성공했습니다.");
+	AI_AUTHOR_LIST_SUCCESS(HttpStatus.OK.value(), "AI작가 목록 조회에 성공했습니다."),
+	AI_AUTHOR_FAVORITE_LIST_SUCCESS(HttpStatus.OK.value(), "AI작가 북마크 목록 조회에 성공했습니다.");
 
 	private final int code;
 	private final String message;

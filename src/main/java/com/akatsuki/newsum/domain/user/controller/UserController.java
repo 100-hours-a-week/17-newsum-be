@@ -22,6 +22,8 @@ import com.akatsuki.newsum.common.pagination.annotation.CursorParam;
 import com.akatsuki.newsum.common.pagination.model.cursor.Cursor;
 import com.akatsuki.newsum.common.pagination.model.page.CursorPage;
 import com.akatsuki.newsum.common.security.UserDetailsImpl;
+import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorBookmarkedResponse;
+import com.akatsuki.newsum.domain.aiAuthor.service.AiAuthorService;
 import com.akatsuki.newsum.domain.user.dto.KeywordListResponse;
 import com.akatsuki.newsum.domain.user.dto.KeywordSubscriptionRequest;
 import com.akatsuki.newsum.domain.user.dto.RecentViewWebtoonListResponse;
@@ -46,6 +48,7 @@ public class UserController {
 	private final WebtoonService webtoonService;
 	private final KeywordService keywordService;
 	private final CursorPaginationService cursorPaginationService;
+	private final AiAuthorService aiAuthorService;
 
 	@GetMapping("/profile")
 	public ResponseEntity<ApiResponse<UserProfileDto>> getProfile(
@@ -106,6 +109,17 @@ public class UserController {
 			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_BOOKMARK_SUCCESS, response)
 		);
 
+	}
+
+	@GetMapping("/favorite/ai-authors")
+	public ResponseEntity<ApiResponse<List<AiAuthorBookmarkedResponse>>> getBookmarkedAiAuthors(
+		@AuthenticationPrincipal UserDetailsImpl userDetails
+	) {
+		Long userId = getUserId(userDetails);
+		List<AiAuthorBookmarkedResponse> result = aiAuthorService.getBookmarkedAuthor(userId);
+
+		return ResponseEntity.ok(ApiResponse.success(ResponseCodeAndMessage.AI_AUTHOR_FAVORITE_LIST_SUCCESS, result)
+		);
 	}
 
 	@PostMapping("/keywords/subscriptions")
