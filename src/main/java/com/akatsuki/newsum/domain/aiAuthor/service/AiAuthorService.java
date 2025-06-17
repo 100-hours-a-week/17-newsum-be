@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akatsuki.newsum.common.dto.ErrorCodeAndMessage;
 import com.akatsuki.newsum.common.exception.BusinessException;
 import com.akatsuki.newsum.common.pagination.CursorPaginationService;
+import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorBookmarkedResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorDetailResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorListItemResponse;
 import com.akatsuki.newsum.domain.aiAuthor.dto.AiAuthorListResponse;
@@ -56,6 +57,11 @@ public class AiAuthorService {
 		return buildAuthorListWithSubscribeStatus(userId, authors);
 	}
 
+	public List<AiAuthorBookmarkedResponse> getBookmarkedAuthor(Long userId) {
+		List<AuthorFavorite> authors = findAuthorFavoritebyuserId(userId);
+		return buildAuthorBookmarkedResponse(authors);
+	}
+
 	private AiAuthor findAuthorById(Long aiAuthorId) {
 		return aiAuthorRepository.findById(aiAuthorId)
 			.orElseThrow(() -> new BusinessException(ErrorCodeAndMessage.AI_AUTHOR_NOT_FOUND));
@@ -63,6 +69,11 @@ public class AiAuthorService {
 
 	private Optional<AuthorFavorite> findFavorite(Long userId, Long aiAuthorId) {
 		return aiAuthorFavoriteRepository.findByUserIdAndAiAuthorId(userId, aiAuthorId);
+	}
+
+	//유저아이디 기반으로 구독한 작가목록들 가져오기
+	private List<AuthorFavorite> findAuthorFavoritebyuserId(Long userId) {
+		return aiAuthorFavoriteRepository.findAiAuthorsByUserId(userId);
 	}
 
 	private AiAuthorDetailResponse toDetailResponse(AiAuthor author, List<AiAuthorWebtoonResponse> webtoons,
@@ -120,6 +131,27 @@ public class AiAuthorService {
 			)).toList();
 
 		return new AiAuthorListResponse(items);
+	}
+
+	private List<AiAuthorBookmarkedResponse> buildAuthorBookmarkedResponse(List<AuthorFavorite> authors) {
+		List<AiAuthorBookmarkedResponse> authorBookmarkedResponsesResponses = authors.stream()
+			.map(AuthorFavorite::getAiAuthor)
+			.map(author -> {
+				List<AiAuthorWebtoonResponse> webtoons = author.getWebtoons().stream()
+					.sorted(Comparator.comparing(Webtoon::getCreatedAt).reversed())
+					.limit(4)
+					.map(this::mapToWebtoonResponse)
+					.toList();
+
+				return new AiAuthorBookmarkedResponse(
+					author.getId(),
+					author.getName(),
+					author.getProfileImageUrl(),
+					webtoons
+				);
+			})
+			.toList();
+		return authorBookmarkedResponsesResponses;
 	}
 
 	private boolean isSubscribed(Long userId, Long aiAuthorId) {

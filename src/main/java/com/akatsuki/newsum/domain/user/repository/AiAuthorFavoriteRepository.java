@@ -1,5 +1,6 @@
 package com.akatsuki.newsum.domain.user.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +11,6 @@ public interface AiAuthorFavoriteRepository extends JpaRepository<AuthorFavorite
 	Optional<AuthorFavorite> findByUserIdAndAiAuthorId(Long userId, Long aiAuthorId);
 
 	void deleteByUserIdAndAiAuthorId(Long userId, Long aiAuthorId);
+
+	List<AuthorFavorite> findAiAuthorsByUserId(Long userId);
 }
