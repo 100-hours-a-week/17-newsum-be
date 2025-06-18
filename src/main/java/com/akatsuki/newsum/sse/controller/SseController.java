@@ -38,7 +38,19 @@ public class SseController {
 		}
 	}
 
-	@GetMapping
+	@GetMapping(value = "/webtoon/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public ResponseEntity<SseEmitter> subscribeToWebtoon(
+		@RequestParam("webtoonId") Long webtoonId,
+		@RequestParam("clientId") String clientId,
+		@RequestParam(value = "accessToken", required = false) String token
+	) {
+		String userId = null;
+		if (token != null) {
+			userId = getUserId(token);
+		}
+		SseEmitter response = sseService.subscribeToWebtoon(webtoonId, userId, clientId);
+		return ResponseEntity.ok(response);
+	}
 
 	private String getUserId(String token) {
 		tokenProvider.validateToken(token);
