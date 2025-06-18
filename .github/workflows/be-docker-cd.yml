@@ -2,7 +2,7 @@ name: Backend Prod Docker CD (Blue-Green)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main ]
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
