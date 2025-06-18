@@ -55,10 +55,10 @@ public class SseService {
 		final String idForCleanup;
 
 		if (userId == null) {
-			emitter = subscribe(clientId);  // 비로그인
+			emitter = subscribe(clientId);
 			idForCleanup = "anonymous";
 		} else {
-			emitter = subscribe(userId, clientId);  // 로그인
+			emitter = subscribe(userId, clientId);
 			idForCleanup = userId;
 		}
 
