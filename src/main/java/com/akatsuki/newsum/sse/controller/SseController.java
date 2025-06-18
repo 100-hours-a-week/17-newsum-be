@@ -38,6 +38,8 @@ public class SseController {
 		}
 	}
 
+	@GetMapping
+
 	private String getUserId(String token) {
 		tokenProvider.validateToken(token);
 		return String.valueOf(tokenProvider.getUserIdFromToken(token));
