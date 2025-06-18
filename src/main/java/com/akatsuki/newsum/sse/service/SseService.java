@@ -85,16 +85,16 @@ public class SseService {
 		});
 	}
 
-	private void cleanup(Long webtoonId, String userId, String clientId) {
-		webtoonViewerTracker.removeViewer(webtoonId, clientId);
-		sseEmitterRepository.remove(userId, clientId);
-		sendViewerCount(webtoonId);
-	}
-
 	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String userId, String clientId) {
 		Runnable cleanupTask = () -> cleanup(webtoonId, userId, clientId);
 		emitter.onCompletion(cleanupTask);
 		emitter.onTimeout(cleanupTask);
 		emitter.onError(e -> cleanupTask.run());
+	}
+
+	private void cleanup(Long webtoonId, String userId, String clientId) {
+		webtoonViewerTracker.removeViewer(webtoonId, clientId);
+		sseEmitterRepository.remove(userId, clientId);
+		sendViewerCount(webtoonId);
 	}
 }
