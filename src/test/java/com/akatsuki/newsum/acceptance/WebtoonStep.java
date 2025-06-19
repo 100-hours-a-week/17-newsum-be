@@ -163,8 +163,8 @@ public class WebtoonStep {
 			() -> assertThat(response.jsonPath().getLong("code")).isEqualTo(200)
 		);
 
-		List<Map<String, Object>> topToons = response.jsonPath().getList("data.topToons");
-		List<Map<String, Object>> todaysNews = response.jsonPath().getList("data.todaysNews");
+		List<Map<String, Object>> topToons = response.jsonPath().getList("data.top3News");
+		List<Map<String, Object>> todaysNews = response.jsonPath().getList("data.todayNews");
 
 		assertThat(topToons).hasSizeLessThanOrEqualTo(3);
 		assertThat(todaysNews).hasSizeLessThanOrEqualTo(3);

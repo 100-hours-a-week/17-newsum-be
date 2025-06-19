@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.akatsuki.newsum.common.dto.ErrorCodeAndMessage;
 import com.akatsuki.newsum.common.exception.NotFoundException;
-import com.akatsuki.newsum.converter.DateConverter;
+import com.akatsuki.newsum.common.util.DateUtil;
 import com.akatsuki.newsum.domain.user.dto.UpdateUserRequestDto;
 import com.akatsuki.newsum.domain.user.dto.UpdateUserResponseDto;
 import com.akatsuki.newsum.domain.user.entity.User;
@@ -33,7 +33,7 @@ public class UserService {
 		List<RecentView> recentViews = webtoonRepository.findRecentWebtoons(id);
 		return recentViews.stream()
 			.collect(Collectors.groupingBy(
-				recentView -> DateConverter.localDateTimeToDateString(recentView.getViewedAt()),
+				recentView -> DateUtil.localDateTimeToDateString(recentView.getViewedAt()),
 				() -> new TreeMap<String, List<WebtoonCardDto>>(Comparator.reverseOrder()),
 				Collectors.mapping(this::mapToWebtoonCardDto, Collectors.toList())
 			));

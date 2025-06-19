@@ -20,4 +20,8 @@ public class ApiResponse<T> {
 	public static <T> ApiResponse<T> success(ResponseCodeAndMessage responseCodeAndMessage, T data) {
 		return new ApiResponse<>(responseCodeAndMessage.getMessage(), responseCodeAndMessage.getCode(), data);
 	}
+
+	public static <T> ApiResponse<T> noContent(ResponseCodeAndMessage responseCodeAndMessage) {
+		return new ApiResponse<>(responseCodeAndMessage.getMessage(), responseCodeAndMessage.getCode(), null);
+	}
 }

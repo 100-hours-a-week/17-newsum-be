@@ -55,10 +55,11 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.GCP_VM_DOMAIN_PROD }} >> ~/.ssh/known_hosts
 
-      - name: Install Infisical CLI
+      - name: Install Infisical CLI from CloudFront
         run: |
-          curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
-          sudo apt-get update && sudo apt-get install -y infisical
+          curl -L https://${{secrets.AWS_CLOUDFRONT_URL}}/tools/infisical-linux-amd64 -o infisical
+          chmod +x infisical
+          sudo mv infisical /usr/local/bin/infisical
 
       - name: Fetch .env from Infisical and upload to VM
         run: |

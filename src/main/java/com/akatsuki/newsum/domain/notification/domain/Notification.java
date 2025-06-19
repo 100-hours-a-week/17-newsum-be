@@ -17,8 +17,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification {
@@ -50,4 +52,25 @@ public class Notification {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	@CreationTimestamp
 	private LocalDateTime createdAt;
+
+	public Notification(User user, String title, String content, Long referenceId, NotificationType notificationType) {
+		this.user = user;
+		this.title = title;
+		this.content = content;
+		this.referenceId = referenceId;
+		this.notificationType = notificationType;
+		this.isRead = false;
+	}
+
+	public static Notification fromReply(User user, String title, String content, Long referenceId) {
+		return new Notification(user, title, content, referenceId, NotificationType.REPLY);
+	}
+
+	public String getNotificationType() {
+		return this.notificationType.name();
+	}
+
+	public void read() {
+		this.isRead = true;
+	}
 }

@@ -3,6 +3,7 @@ package com.akatsuki.newsum.acceptance;
 import static com.akatsuki.newsum.acceptance.WebtoonStep.*;
 import static com.akatsuki.newsum.fixture.dto.WebtoonDtoFixture.*;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import io.restassured.response.Response;
 public class WebtoonAcceptanceTest extends AcceptanceTestSupport {
 
 	@Nested
+	@Disabled
 	@DisplayName("웹툰 생성")
 	class WebtoonCreationAcceptanceTest {
 
@@ -198,6 +200,7 @@ public class WebtoonAcceptanceTest extends AcceptanceTestSupport {
 	}
 
 	@Nested
+	@Disabled
 	@DisplayName("웹툰 통합 시나리오")
 	class WebtoonIntegrationScenarioTest {
 

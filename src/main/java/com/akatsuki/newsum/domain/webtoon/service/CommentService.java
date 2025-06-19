@@ -10,9 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.akatsuki.newsum.common.dto.ErrorCodeAndMessage;
+import com.akatsuki.newsum.common.event.Events;
 import com.akatsuki.newsum.common.pagination.CursorPaginationService;
 import com.akatsuki.newsum.common.pagination.model.cursor.Cursor;
 import com.akatsuki.newsum.common.pagination.model.page.CursorPage;
+import com.akatsuki.newsum.domain.notification.presentation.dto.ReplyNotificationEvent;
 import com.akatsuki.newsum.domain.webtoon.dto.CommentAndSubComments;
 import com.akatsuki.newsum.domain.webtoon.dto.CommentCreateRequest;
 import com.akatsuki.newsum.domain.webtoon.dto.CommentEditRequest;
@@ -73,7 +75,17 @@ public class CommentService {
 		}
 		Long parentId = setParentId(request.parentId());
 		Comment newComment = new Comment(id, webtoonId, parentId, request.content());
-		commentRepository.save(newComment);
+		newComment = commentRepository.save(newComment);
+
+		publishReplyNotification(newComment);
+	}
+
+	private void publishReplyNotification(Comment comment) {
+		if (comment.isParent()) {
+			return;
+		}
+		Long userId = commentRepository.findCommentUserIdById(comment.getId());
+		Events.publish(new ReplyNotificationEvent(userId, comment.getId()));
 	}
 
 	@Transactional

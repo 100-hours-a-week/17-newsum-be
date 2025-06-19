@@ -2,6 +2,7 @@ package com.akatsuki.newsum.domain.webtoon.repository;
 
 import static com.akatsuki.newsum.domain.webtoon.entity.comment.entity.QCommentLike.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,6 +21,9 @@ public class CommentLikeQueryRepositoryImpl implements CommentLikeQueryRepositor
 
 	@Override
 	public Set<Long> findLikedCommentIdsByUserIdAndCommentIds(Long userId, List<Long> commentIds) {
+		if (userId == null) {
+			return Collections.emptySet();
+		}
 		return queryFactory
 			.select(commentLike.commentId)
 			.from(commentLike)

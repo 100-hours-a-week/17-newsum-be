@@ -69,12 +69,12 @@ public class User extends BaseTimeEntity {
 	public void profileImageUrl(String profileImageUrl) {
 		this.profileImageUrl = profileImageUrl;
 	}
-	
+
 	public User(Long id) {
 		this.id = id;
 	}
 
 	public KeywordFavorite subscribeKeyword(Keyword keyword) {
-		return new KeywordFavorite(this, keyword);
+		return new KeywordFavorite(this.id, keyword);
 	}
 }

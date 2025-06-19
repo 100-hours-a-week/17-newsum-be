@@ -44,7 +44,7 @@ jwt:
     expiration: 604800000  # 7일
 
 ai-server:
-  base-url: http://localhost:9999
+  base-url: http://localhost:${wiremock.server.port}
 
 user:
   default-profile-image-url: https://example.com/default-profile.jpg

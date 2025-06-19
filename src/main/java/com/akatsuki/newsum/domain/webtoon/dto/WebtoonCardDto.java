@@ -9,5 +9,4 @@ public record WebtoonCardDto(
 	LocalDateTime createdAt,
 	Long viewCount
 ) {
-
 }

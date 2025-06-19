@@ -23,4 +23,6 @@ public interface WebtoonQueryRepository {
 	List<RecentView> findRecentWebtoons(Long id);
 
 	List<Webtoon> searchByTitleContaining(String query, Cursor cursor, int size);
+
+	List<Webtoon> searchByUserKeywordBookmarks(String query, Cursor cursor, int size);
 }

@@ -139,6 +139,65 @@ public class WebtoonQueryRepositoryImpl implements WebtoonQueryRepository {
 			.fetch();
 	}
 
+	@Override
+	public List<Webtoon> searchByUserKeywordBookmarks(String ftsQuery, Cursor cursor, int size) {
+		CreatedAtIdCursor createdAtIdCursor = (CreatedAtIdCursor)cursor;
+
+		final String sql = """
+			SELECT w.id,
+			       w.title,
+			       w.content,
+			       w.created_at,
+			       w.thumbnail_image_url,
+			       w.view_count
+			FROM webtoon w
+			WHERE to_tsvector('simple', coalesce(w.title, '') || ' ' || coalesce(w.content, '')) @@ to_tsquery('simple', ?)
+			  AND (w.created_at < ? OR (w.created_at = ? AND w.id < ?))
+
+			UNION
+
+			SELECT w.id,
+			       w.title,
+			       w.content,
+			       w.created_at,
+			       w.thumbnail_image_url,
+			       w.view_count
+			FROM webtoon w
+			JOIN (
+				SELECT DISTINCT webtoon_id
+				FROM webtoon_detail
+				WHERE to_tsvector('simple', coalesce(content, '')) @@ to_tsquery('simple', ?)
+			) d ON w.id = d.webtoon_id
+			WHERE (w.created_at < ? OR (w.created_at = ? AND w.id < ?))
+
+			ORDER BY created_at DESC, id DESC
+			LIMIT ?
+			""";
+
+		return jdbcTemplate.query(sql,
+			new Object[] {
+				ftsQuery, // for webtoon
+				createdAtIdCursor.getCreatedAt(),
+				createdAtIdCursor.getCreatedAt(),
+				createdAtIdCursor.getId(),
+
+				ftsQuery, // for webtoon_detail
+				createdAtIdCursor.getCreatedAt(),
+				createdAtIdCursor.getCreatedAt(),
+				createdAtIdCursor.getId(),
+
+				size + 1
+			},
+			(rs, rowNum) -> new Webtoon(
+				rs.getTimestamp("created_at").toLocalDateTime(),
+				rs.getLong("id"),
+				rs.getString("title"),
+				rs.getString("thumbnail_image_url"),
+				rs.getLong("view_count")
+			)
+		);
+	}
+
 	private QueryFragment buildQueryFragment(Cursor cursor) {
 		CursorPageQueryBuilder<Cursor> queryBuilder = cursorQueryRegistry.resolve(QWebtoon.class, cursor,
 			QueryEngineType.QUERYDSL);

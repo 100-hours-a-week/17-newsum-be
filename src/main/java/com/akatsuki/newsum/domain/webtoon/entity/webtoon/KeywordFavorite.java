@@ -2,8 +2,6 @@ package com.akatsuki.newsum.domain.webtoon.entity.webtoon;
 
 import java.time.LocalDateTime;
 
-import com.akatsuki.newsum.domain.user.entity.User;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,9 +24,8 @@ public class KeywordFavorite {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "keyword_id", nullable = false)
@@ -37,10 +34,9 @@ public class KeywordFavorite {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
-	public KeywordFavorite(User userId, Keyword keyword) {
-		this.user = userId;
+	public KeywordFavorite(Long userId, Keyword keyword) {
+		this.userId = userId;
 		this.keyword = keyword;
 		this.createdAt = LocalDateTime.now();
 	}
-
 }

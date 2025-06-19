@@ -1,8 +1,10 @@
 package com.akatsuki.newsum.extern.dto;
 
-public record CreateWebtoonApiRequest(
-	Long id,
-	String data
+import java.util.List;
+import java.util.Map;
 
+public record CreateWebtoonApiRequest(
+	String id,
+	List<Map<String, Object>> imagePrompts
 ) {
 }

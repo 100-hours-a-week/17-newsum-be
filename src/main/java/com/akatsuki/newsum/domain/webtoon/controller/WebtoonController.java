@@ -20,14 +20,17 @@ import com.akatsuki.newsum.common.pagination.annotation.CursorParam;
 import com.akatsuki.newsum.common.pagination.model.cursor.Cursor;
 import com.akatsuki.newsum.common.pagination.model.page.CursorPage;
 import com.akatsuki.newsum.common.security.UserDetailsImpl;
-import com.akatsuki.newsum.domain.webtoon.dto.CreateWebtoonReqeust;
+import com.akatsuki.newsum.domain.notification.application.usecase.NotificationUseCase;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonCardDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonDetailResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonListResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSearchResponse;
+import com.akatsuki.newsum.domain.webtoon.dto.WebtoonTopResponse;
 import com.akatsuki.newsum.domain.webtoon.service.WebtoonService;
+import com.akatsuki.newsum.extern.dto.ImageGenerationApiRequest;
+import com.akatsuki.newsum.extern.dto.ImageGenerationCallbackRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,7 @@ public class WebtoonController {
 
 	private final WebtoonService webtoonService;
 	private final CursorPaginationService cursorPaginationService;
+	private final NotificationUseCase notificationUseCase;
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<WebtoonListResponse>> getWebtoons(
@@ -82,41 +86,27 @@ public class WebtoonController {
 		);
 	}
 
-	@PostMapping
-	public ResponseEntity<ApiResponse> createWWebtoons(
-		@RequestBody CreateWebtoonReqeust request
-	) {
-		webtoonService.createWebtoon(request);
-		return ResponseEntity.ok(
-			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_CREATE_SUCCESS, null)
-		);
-	}
-
-	//TODO : 테스트 용도의 API, 삭제해야함.
-	@PostMapping("/testCreate/{authorId}")
-	public ResponseEntity<ApiResponse> testCreateWebtoons(
-		@RequestParam Long authorId
-	) {
-		webtoonService.createWebtoonTest(authorId);
-		return ResponseEntity.ok(
-			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_CREATE_SUCCESS, null)
-		);
-	}
-
 	//메인페이지
 	@GetMapping("/top")
-	public ResponseEntity<ApiResponse<Map<String, List<WebtoonCardDto>>>> getTop() {
-		List<WebtoonCardDto> topToons = webtoonService.getTop3TodayByViewCount();
-		List<WebtoonCardDto> newsCards = webtoonService.getTodayNewsCards();
+	public ResponseEntity<ApiResponse<WebtoonTopResponse>> getTop(
+		@AuthenticationPrincipal UserDetailsImpl userDetails
+	) {
+		List<WebtoonCardDto> top3News = webtoonService.getTop3TodayByViewCount();
+		List<WebtoonCardDto> todayNews = webtoonService.getTodayNewsCards();
 
-		Map<String, List<WebtoonCardDto>> response = Map.of(
-			"topToons", topToons,
-			"todaysNews", newsCards
-		);
-
-		return ResponseEntity.ok(
-			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_TOP_SUCCESS, response)
-		);
+		Long userId = getUserId(userDetails);
+		if (userId == null) {
+			WebtoonTopResponse response = new WebtoonTopResponse(top3News, todayNews, false);
+			return ResponseEntity.ok(
+				ApiResponse.success(ResponseCodeAndMessage.WEBTOON_TOP_SUCCESS, response)
+			);
+		} else {
+			Boolean hasNotReadNotification = notificationUseCase.hasNotReadNotification(userId);
+			WebtoonTopResponse response = new WebtoonTopResponse(top3News, todayNews, hasNotReadNotification);
+			return ResponseEntity.ok(
+				ApiResponse.success(ResponseCodeAndMessage.WEBTOON_TOP_SUCCESS, response)
+			);
+		}
 	}
 
 	//카테고리별페이지
@@ -157,12 +147,25 @@ public class WebtoonController {
 		);
 	}
 
-	private Long getUserId(
-		UserDetailsImpl userDetails) {
-		if (userDetails == null) {
-			return null;
-		}
-		return userDetails.getUserId();
+	@PostMapping
+	public ResponseEntity<ApiResponse> receiveImageLinks(
+		@RequestBody ImageGenerationCallbackRequest request
+	) {
+		webtoonService.imageGenerationCallbackRequest(request);
+
+		return ResponseEntity.ok(
+			ApiResponse.success(ResponseCodeAndMessage.AI_WEBTOON_CREATED_SUCCESSFULLY, null)
+		);
+	}
+
+	@PostMapping("/prompts")
+	public ResponseEntity<ApiResponse> imageprompts(
+		@RequestBody ImageGenerationApiRequest request
+	) {
+		webtoonService.saveimageprompts(request);
+		return ResponseEntity.ok(
+			ApiResponse.success(ResponseCodeAndMessage.AI_IMAGE_PROMPT_SAVED_SUCCESS, null)
+		);
 	}
 
 	@PostMapping("/{webtoonId}/favorites")
@@ -176,7 +179,6 @@ public class WebtoonController {
 		);
 	}
 
-	//웹툰 좋아요
 	@PostMapping("/{webtoonId}/likes")
 	public ResponseEntity<ApiResponse<WebtoonLikeStatusDto>> like(
 		@PathVariable Long webtoonId,
@@ -193,6 +195,14 @@ public class WebtoonController {
 			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_LIKE_SUCCESS, dto)
 		);
 
+	}
+
+	private Long getUserId(
+		UserDetailsImpl userDetails) {
+		if (userDetails == null) {
+			return null;
+		}
+		return userDetails.getUserId();
 	}
 
 }
