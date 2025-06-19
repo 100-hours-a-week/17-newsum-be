@@ -1,0 +1,3 @@
+ALTER TABLE webtoon
+ALTER
+COLUMN content TYPE VARCHAR(1023);
