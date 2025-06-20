@@ -60,7 +60,7 @@ public enum ErrorCodeAndMessage {
 	EXTERN_SERVER_UNAVAILABLE(HttpStatus.INTERNAL_SERVER_ERROR.value(), "외부 서버의 접근이 불가합니다."),
 	// 이미지 생성 큐 관련 오류
 	IMAGE_GENERATION_QUEUE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "존재하지 않는 이미지 생성 요청입니다."),
-	;
+	IMAGE_GENERATION_QUEUE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST.value(), "이미 생성한 이미지 프롬프트입니다.");
 
 	private final int code;
 	private final String message;

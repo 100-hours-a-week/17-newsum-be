@@ -336,6 +336,8 @@ public class WebtoonService {
 		validateImageLinks(imageLinks);
 
 		ImageGenerationQueue queue = findQueueById(request.requestId());
+		validateNonCompletedQueue(queue);
+
 		List<String> descriptions = queue.getDescriptions();
 
 		Webtoon webtoon = mapToWebtoonEntity(queue, parseThumbnailImage(imageLinks));
@@ -343,6 +345,12 @@ public class WebtoonService {
 		webtoonRepository.save(webtoon);
 		webtoonDetailRepository.saveAll(details);
 		queue.completed();
+	}
+
+	private void validateNonCompletedQueue(ImageGenerationQueue queue) {
+		if (queue.isCompleted()) {
+			throw new BusinessException(ErrorCodeAndMessage.IMAGE_GENERATION_QUEUE_ALREADY_COMPLETED);
+		}
 	}
 
 	private String parseThumbnailImage(List<String> imageLinks) {
