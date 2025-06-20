@@ -42,13 +42,9 @@ public class SseController {
 	public ResponseEntity<SseEmitter> subscribeToWebtoon(
 		@RequestParam("webtoonId") Long webtoonId,
 		@RequestParam("clientId") String clientId,
-		@RequestParam(value = "accessToken", required = false) String token
 	) {
-		String userId = null;
-		if (token != null) {
-			userId = getUserId(token);
-		}
-		SseEmitter response = sseService.startViewingWebtoon(webtoonId, userId, clientId);
+
+		SseEmitter response = sseService.startViewingWebtoon(webtoonId, clientId);
 		return ResponseEntity.ok(response);
 	}
 

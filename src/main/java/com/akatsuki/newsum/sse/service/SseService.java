@@ -55,17 +55,8 @@ public class SseService {
 			});
 	}
 
-	public SseEmitter startViewingWebtoon(Long webtoonId, String userId, String clientId) {
-		SseEmitter emitter;
-		final String idForCleanup;
-
-		if (userId == null) {
-			emitter = subscribe(clientId);
-			idForCleanup = "anonymous";
-		} else {
-			emitter = subscribe(userId, clientId);
-			idForCleanup = userId;
-		}
+	public SseEmitter startViewingWebtoon(Long webtoonId, String clientId) {
+		SseEmitter emitter = subscribe(clientId);
 
 		webtoonSseEmitterRepository.save(webtoonId, clientId);
 
@@ -82,12 +73,12 @@ public class SseService {
 			emitter.completeWithError(e);
 		}
 
-		registerEmitterCleanup(emitter, webtoonId, idForCleanup, clientId);
+		registerEmitterCleanup(emitter, webtoonId, clientId);
 		return emitter;
 	}
 
-	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String userId, String clientId) {
-		Runnable cleanupTask = () -> cleanup(webtoonId, userId, clientId);
+	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String clientId) {
+		Runnable cleanupTask = () -> cleanup(webtoonId, clientId);
 
 		emitter.onCompletion(cleanupTask);
 		emitter.onTimeout(cleanupTask);
@@ -97,7 +88,7 @@ public class SseService {
 		});
 	}
 
-	private void cleanup(Long webtoonId, String userId, String clientId) {
+	private void cleanup(Long webtoonId, String clientId) {
 		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
 
 		webtoonViewerTracker.removeViewer(webtoonId, clientId);
