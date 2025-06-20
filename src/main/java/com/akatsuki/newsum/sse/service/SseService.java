@@ -97,7 +97,7 @@ public class SseService {
 	}
 
 	private void cleanup(Long webtoonId, String userId, String clientId) {
-		log.info("❌ SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
+		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
 		webtoonViewerTracker.removeViewer(webtoonId, clientId);
 		viewerEventPublisher.publishLeave(webtoonId, clientId);
 		sseEmitterRepository.remove(userId, clientId);
