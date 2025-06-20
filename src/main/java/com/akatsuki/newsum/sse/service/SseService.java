@@ -7,6 +7,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.akatsuki.newsum.sse.kafka.WebtoonViewerEventPublisher;
 import com.akatsuki.newsum.sse.repository.SseEmitterRepository;
+import com.akatsuki.newsum.sse.repository.WebtoonSseEmitterRepository;
 import com.akatsuki.newsum.sse.service.viewer.WebtoonViewerTracker;
 
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class SseService {
 	private final SseEmitterRepository sseEmitterRepository;
 	private final WebtoonViewerTracker webtoonViewerTracker;
 	private final WebtoonViewerEventPublisher viewerEventPublisher;
+	private final WebtoonSseEmitterRepository webtoonSseEmitterRepository;
 
 	public SseEmitter subscribe(String uuid) {
 		SseEmitter emitter = sseEmitterRepository.saveAnonymous(uuid);
@@ -47,6 +49,7 @@ public class SseService {
 				try {
 					emitter.send(SseEmitter.event().name("data").data(data));
 				} catch (Exception e) {
+					emitter.completeWithError(e);
 					sseEmitterRepository.remove(userId);
 				}
 			});
@@ -64,44 +67,56 @@ public class SseService {
 			idForCleanup = userId;
 		}
 
+		webtoonSseEmitterRepository.save(webtoonId, clientId);
+
 		webtoonViewerTracker.addViewer(webtoonId, clientId);
-		//카프카전송
 		viewerEventPublisher.publishJoin(webtoonId, clientId);
-		sendViewerCount(webtoonId);
+
+		try {
+			int count = webtoonViewerTracker.getViewerCount(webtoonId);
+			emitter.send(SseEmitter.event()
+				.name("viewer-count")
+				.data("viewerCount: " + count));
+		} catch (IOException | IllegalStateException e) {
+			log.warn("초기 viewerCount 전송 실패: {}", e.getMessage());
+			emitter.completeWithError(e);
+		}
 
 		registerEmitterCleanup(emitter, webtoonId, idForCleanup, clientId);
-
 		return emitter;
+	}
+
+	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String userId, String clientId) {
+		Runnable cleanupTask = () -> cleanup(webtoonId, userId, clientId);
+
+		emitter.onCompletion(cleanupTask);
+		emitter.onTimeout(cleanupTask);
+		emitter.onError(e -> {
+			log.warn("SSE error 발생: {}", e.toString());
+			cleanupTask.run();
+		});
+	}
+
+	private void cleanup(Long webtoonId, String userId, String clientId) {
+		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
+
+		webtoonViewerTracker.removeViewer(webtoonId, clientId);
+		viewerEventPublisher.publishLeave(webtoonId, clientId);
+		webtoonSseEmitterRepository.remove(webtoonId, clientId);
+		sendViewerCount(webtoonId);
 	}
 
 	private void sendViewerCount(Long webtoonId) {
 		int count = webtoonViewerTracker.getViewerCount(webtoonId);
 		String message = "viewerCount: " + count;
 
-		sseEmitterRepository.getAllEmitters().forEach(emitter -> {
+		webtoonSseEmitterRepository.getEmitters(webtoonId).forEach(emitter -> {
 			try {
-				emitter.send(SseEmitter.event()
-					.name("viewer-count")
-					.data(message));
+				emitter.send(SseEmitter.event().name("viewer-count").data(message));
 			} catch (IllegalStateException | IOException e) {
-				log.warn("SSE 전송 실패, emitter 제거됨: {}", e.getMessage());
+				log.warn("SSE 전송 실패: {}", e.getMessage());
 				emitter.completeWithError(e);
 			}
 		});
-	}
-
-	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String userId, String clientId) {
-		Runnable cleanupTask = () -> cleanup(webtoonId, userId, clientId);
-		emitter.onCompletion(cleanupTask);
-		emitter.onTimeout(cleanupTask);
-		emitter.onError(e -> cleanupTask.run());
-	}
-
-	private void cleanup(Long webtoonId, String userId, String clientId) {
-		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
-		webtoonViewerTracker.removeViewer(webtoonId, clientId);
-		viewerEventPublisher.publishLeave(webtoonId, clientId);
-		sseEmitterRepository.remove(userId, clientId);
-		sendViewerCount(webtoonId);
 	}
 }
