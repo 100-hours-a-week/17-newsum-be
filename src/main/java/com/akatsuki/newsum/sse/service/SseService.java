@@ -52,7 +52,7 @@ public class SseService {
 			});
 	}
 
-	public SseEmitter subscribeToWebtoon(Long webtoonId, String userId, String clientId) {
+	public SseEmitter startViewingWebtoon(Long webtoonId, String userId, String clientId) {
 		SseEmitter emitter;
 		final String idForCleanup;
 

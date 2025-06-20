@@ -48,7 +48,7 @@ public class SseController {
 		if (token != null) {
 			userId = getUserId(token);
 		}
-		SseEmitter response = sseService.subscribeToWebtoon(webtoonId, userId, clientId);
+		SseEmitter response = sseService.startViewingWebtoon(webtoonId, userId, clientId);
 		return ResponseEntity.ok(response);
 	}
 
