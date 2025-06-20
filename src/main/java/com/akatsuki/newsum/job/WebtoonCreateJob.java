@@ -18,9 +18,9 @@ public class WebtoonCreateJob {
 	private final ImageQueueService imageQueueService;
 	private final ReentrantLock lock = new ReentrantLock();
 
-	private static final long THIRTY_MINUTES = 5 * 60 * 1000; // 5분
+	private static final long SCHEDULE_CYCLE_TYME = 30 * 60 * 1000; // 5분
 
-	@Scheduled(fixedRate = THIRTY_MINUTES)
+	@Scheduled(fixedRate = SCHEDULE_CYCLE_TYME)
 	public void process() {
 		if (!lock.tryLock()) {
 			log.info("이전 작업 실행 중 - 스킵");
