@@ -94,4 +94,8 @@ public class ImageGenerationQueue {
 	public List<String> getDescriptions() {
 		return List.of(description1, description2, description3, description4);
 	}
+
+	public boolean isCompleted() {
+		return this.status.equals(GenerationStatus.COMPLETED);
+	}
 }
