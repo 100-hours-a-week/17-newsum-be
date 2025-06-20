@@ -56,9 +56,9 @@ public class SseService {
 	}
 
 	public SseEmitter startViewingWebtoon(Long webtoonId, String clientId) {
-		SseEmitter emitter = subscribe(clientId);
+		SseEmitter emitter = new SseEmitter();
 
-		webtoonSseEmitterRepository.save(webtoonId, clientId);
+		webtoonSseEmitterRepository.save(webtoonId, clientId, emitter);
 
 		webtoonViewerTracker.addViewer(webtoonId, clientId);
 		viewerEventPublisher.publishJoin(webtoonId, clientId);
@@ -80,10 +80,18 @@ public class SseService {
 	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String clientId) {
 		Runnable cleanupTask = () -> cleanup(webtoonId, clientId);
 
-		emitter.onCompletion(cleanupTask);
-		emitter.onTimeout(cleanupTask);
+		emitter.onCompletion(() -> {
+			log.info("[SSE 종료] clientId={}, webtoonId={} - onCompletion 호출 (탭 닫힘 또는 연결 정상 종료)", clientId, webtoonId);
+			cleanupTask.run();
+		});
+
+		emitter.onTimeout(() -> {
+			log.warn("[SSE 타임아웃] clientId={}, webtoonId={} - 일정 시간동안 이벤트 미전송", clientId, webtoonId);
+			cleanupTask.run();
+		});
+
 		emitter.onError(e -> {
-			log.warn("SSE error 발생: {}", e.toString());
+			log.error("[SSE 오류] clientId={}, webtoonId={} - 예외 발생: {}", clientId, webtoonId, e.toString());
 			cleanupTask.run();
 		});
 	}

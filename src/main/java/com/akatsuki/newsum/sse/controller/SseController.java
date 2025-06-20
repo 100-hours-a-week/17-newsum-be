@@ -41,7 +41,7 @@ public class SseController {
 	@GetMapping(value = "/webtoon/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public ResponseEntity<SseEmitter> subscribeToWebtoon(
 		@RequestParam("webtoonId") Long webtoonId,
-		@RequestParam("clientId") String clientId,
+		@RequestParam("clientId") String clientId
 	) {
 
 		SseEmitter response = sseService.startViewingWebtoon(webtoonId, clientId);

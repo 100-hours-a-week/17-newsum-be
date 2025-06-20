@@ -13,17 +13,9 @@ public class WebtoonSseEmitterRepository {
 	private static final long TIMEOUT = 5 * 60 * 1000L;
 	private final Map<Long, Map<String, SseEmitter>> viewers = new ConcurrentHashMap<>();
 
-	public SseEmitter save(Long webtoonId, String clientId) {
-		SseEmitter emitter = new SseEmitter(TIMEOUT);
-
-		emitter.onCompletion(() -> remove(webtoonId, clientId));
-		emitter.onTimeout(() -> remove(webtoonId, clientId));
-		emitter.onError(e -> remove(webtoonId, clientId));
-
+	public void save(Long webtoonId, String clientId, SseEmitter emitter) {
 		viewers.computeIfAbsent(webtoonId, k -> new ConcurrentHashMap<>())
 			.put(clientId, emitter);
-
-		return emitter;
 	}
 
 	public void remove(Long webtoonId, String clientId) {
