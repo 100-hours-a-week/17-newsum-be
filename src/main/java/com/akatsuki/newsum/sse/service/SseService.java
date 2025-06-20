@@ -83,7 +83,8 @@ public class SseService {
 				emitter.send(SseEmitter.event()
 					.name("viewer-count")
 					.data(message));
-			} catch (IOException e) {
+			} catch (IllegalStateException | IOException e) {
+				log.warn("SSE 전송 실패, emitter 제거됨: {}", e.getMessage());
 				emitter.completeWithError(e);
 			}
 		});
