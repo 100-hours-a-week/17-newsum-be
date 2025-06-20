@@ -11,18 +11,15 @@ public class WebtoonViewerTracker {
 
 	private final Map<Long, Set<String>> viewers = new ConcurrentHashMap<>();
 
-	public void addViewers(Long webtoonId, String clientId) {
+	public void addViewer(Long webtoonId, String clientId) {
 		viewers.computeIfAbsent(webtoonId, k -> ConcurrentHashMap.newKeySet()).add(clientId);
 	}
 
 	public void removeViewer(Long webtoonId, String clientId) {
-		Set<String> clientIds = viewers.get(webtoonId);
-		if (clientIds != null) {
+		viewers.computeIfPresent(webtoonId, (id, clientIds) -> {
 			clientIds.remove(clientId);
-			if (clientIds.isEmpty()) {
-				viewers.remove(webtoonId);
-			}
-		}
+			return clientIds.isEmpty() ? null : clientIds;
+		});
 	}
 
 	public int getViewerCount(Long webtoonId) {

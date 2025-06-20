@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.akatsuki.newsum.sse.kafka.WebtoonViewerEventPublisher;
 import com.akatsuki.newsum.sse.repository.SseEmitterRepository;
 import com.akatsuki.newsum.sse.service.viewer.WebtoonViewerTracker;
 
@@ -18,6 +19,7 @@ public class SseService {
 
 	private final SseEmitterRepository sseEmitterRepository;
 	private final WebtoonViewerTracker webtoonViewerTracker;
+	private final WebtoonViewerEventPublisher viewerEventPublisher;
 
 	public SseEmitter subscribe(String uuid) {
 		SseEmitter emitter = sseEmitterRepository.saveAnonymous(uuid);
@@ -62,7 +64,9 @@ public class SseService {
 			idForCleanup = userId;
 		}
 
-		webtoonViewerTracker.addViewers(webtoonId, clientId);
+		webtoonViewerTracker.addViewer(webtoonId, clientId);
+		//카프카전송
+		viewerEventPublisher.publishJoin(webtoonId, clientId);
 		sendViewerCount(webtoonId);
 
 		registerEmitterCleanup(emitter, webtoonId, idForCleanup, clientId);
@@ -93,7 +97,9 @@ public class SseService {
 	}
 
 	private void cleanup(Long webtoonId, String userId, String clientId) {
+		log.info("❌ SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
 		webtoonViewerTracker.removeViewer(webtoonId, clientId);
+		viewerEventPublisher.publishLeave(webtoonId, clientId);
 		sseEmitterRepository.remove(userId, clientId);
 		sendViewerCount(webtoonId);
 	}
