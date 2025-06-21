@@ -92,7 +92,7 @@ jobs:
                 --env=$INFISICAL_ENV \
                 --projectId=$INFISICAL_PROJECT_ID \
                 --token=$INFISICAL_TOKEN \
-                --format=dotenv \
+                --format=dotenv-export \
                 --domain=$INFISICAL_API_URL > /home/ubuntu/newsum-backend.env
 
               # 기존 컨테이너 중지 및 제거
