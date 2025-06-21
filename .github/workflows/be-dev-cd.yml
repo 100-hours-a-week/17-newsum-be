@@ -57,46 +57,56 @@ jobs:
             --query 'Reservations[*].Instances[*].PrivateIpAddress' \
             --output text)
           
-          # 한 줄로 변환
-          IPS_SINGLE_LINE=$(echo $IPS | tr '\n' ' ')
-          # 디버깅
+          # IP 리스트 디버깅 출력
           echo "IPS: $IPS"
-          # 출력
+          
+          # 줄바꿈 제거하고 공백 구분의 한 줄로 만들어 출력
+          IPS_SINGLE_LINE=$(echo $IPS | tr '\n' ' ')
           echo "ips=$IPS_SINGLE_LINE" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to WAS EC2 via SSH
         run: |
+          # GitHub Actions 시크릿을 쉘 변수로 먼저 할당
+          ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
+          ECR_REPO=${{ secrets.ECR_REPO }}
+          SSH_KEY_PATH=${{ secrets.SSH_KEY_PATH }}
+          INFISICAL_URL=${{ secrets.AWS_CLOUDFRONT_URL }}
+          INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECT_ID }}
+          INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN_DEV }}
+          INFISICAL_ENV=${{ secrets.INFISICAL_ENV_DEV }}
+          INFISICAL_API_URL=${{ secrets.INFISICAL_API_URL }}
+          
           for IP in ${{ steps.fetch.outputs.ips }}; do
             echo "🚀 배포 중: $IP"
 
             # Self-hosted-runner 내부 키 경로
-            ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_KEY_PATH }} ubuntu@$IP << 'EOF'
+            ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP << EOF
               # ECR 로그인
               aws ecr get-login-password --region ap-northeast-2 \
-              | sudo docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+              | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
 
               # .env 생성
-              curl -Ls https://${{ secrets.AWS_CLOUDFRONT_URL }}/tools/infisical-linux-arm64 -o infisical
+              curl -Ls https://$INFISICAL_URL/tools/infisical-linux-arm64 -o infisical
               chmod +x infisical && sudo mv infisical /usr/local/bin/infisical
               infisical export \
-                --env=${{ secrets.INFISICAL_ENV_DEV }} \
-                --projectId=${{ secrets.INFISICAL_PROJECT_ID }} \
-                --token=${{ secrets.INFISICAL_TOKEN_DEV }} \
+                --env=$INFISICAL_ENV \
+                --projectId=$INFISICAL_PROJECT_ID \
+                --token=$INFISICAL_TOKEN \
                 --format=dotenv \
-                --domain=${{ secrets.INFISICAL_API_URL }} > /home/ubuntu/newsum-backend.env
+                --domain=$INFISICAL_API_URL > /home/ubuntu/newsum-backend.env
 
               # 기존 컨테이너 중지 및 제거
               sudo docker stop newsum_backend || true
               sudo docker rm newsum_backend || true
 
-              # 최신 이미지 pull 및 실행
-              sudo docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev
+              # 새 이미지 pull 후 실행
+              sudo docker pull $ECR_REGISTRY/$ECR_REPO:dev
               sudo docker run -d \
                 --name newsum_backend \
                 --restart=always \
                 --env-file /home/ubuntu/newsum-backend.env \
                 -p 8080:8080 \
-                ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev
+                $ECR_REGISTRY/$ECR_REPO:dev
           
               # 🔐 환경변수 파일 삭제
               rm -f /home/ubuntu/newsum-backend.env
