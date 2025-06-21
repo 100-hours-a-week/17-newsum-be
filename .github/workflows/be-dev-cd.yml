@@ -80,7 +80,7 @@ jobs:
             echo "🚀 배포 중: $IP"
 
             # Self-hosted-runner 내부 키 경로
-            ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP <<EOF
+            ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP <<-EOF
               # ECR 로그인
               aws ecr get-login-password --region ap-northeast-2 \
               | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
@@ -110,5 +110,5 @@ jobs:
           
               # 🔐 환경변수 파일 삭제
               rm -f /home/ubuntu/newsum-backend.env
-            EOF
+          EOF
           done
