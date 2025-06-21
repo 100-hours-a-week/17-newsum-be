@@ -15,15 +15,15 @@ public class WebtoonViewerTracker {
 		viewers.computeIfAbsent(webtoonId, k -> ConcurrentHashMap.newKeySet()).add(clientId);
 	}
 
-	public void removeViewer(Long webtoonId, String clientId) {
-		viewers.computeIfPresent(webtoonId, (id, clientIds) -> {
-			clientIds.remove(clientId);
-			return clientIds.isEmpty() ? null : clientIds;
-		});
-	}
+	// public void removeViewer(Long webtoonId, String clientId) {
+	// 	viewers.computeIfPresent(webtoonId, (id, clientIds) -> {
+	// 		clientIds.remove(clientId);
+	// 		return clientIds.isEmpty() ? null : clientIds;
+	// 	});
+	// }
 
-	public int getViewerCount(Long webtoonId) {
-		return viewers.getOrDefault(webtoonId, Set.of()).size();
-	}
+	// public int getViewerCount(Long webtoonId) {
+	// 	return viewers.getOrDefault(webtoonId, Set.of()).size();
+	// }
 }
 

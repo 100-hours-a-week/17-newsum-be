@@ -5,7 +5,8 @@ import org.springframework.stereotype.Component;
 
 import com.akatsuki.newsum.cache.ViewerEventDeduplicationCache;
 import com.akatsuki.newsum.sse.kafka.dto.WebtoonViewerEvent;
-import com.akatsuki.newsum.sse.service.viewer.WebtoonViewerTracker;
+import com.akatsuki.newsum.sse.repository.WebtoonSseEmitterRepository;
+import com.akatsuki.newsum.sse.service.SseService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 public class WebtoonViewerEventConsumer {
 
 	private final ViewerEventDeduplicationCache dedupCache;
-	private final WebtoonViewerTracker viewerTracker;
+	private final WebtoonSseEmitterRepository webtoonSseEmitterRepository;
+	private final SseService sseService;
 
 	@KafkaListener(
 		topics = "webtoon-viewer",
@@ -35,8 +37,8 @@ public class WebtoonViewerEventConsumer {
 		log.debug("Kafka 수신: {}", event);
 
 		switch (event.action()) {
-			case JOIN -> viewerTracker.addViewer(event.webtoonId(), event.clientId());
-			case LEAVE -> viewerTracker.removeViewer(event.webtoonId(), event.clientId());
+			case JOIN -> webtoonSseEmitterRepository.save(event.webtoonId(), event.clientId());
+			case LEAVE -> webtoonSseEmitterRepository.remove(event.webtoonId(), event.clientId());
 			default -> log.warn("알 수 없는 이벤트 타입: {}", event.action());
 		}
 	}

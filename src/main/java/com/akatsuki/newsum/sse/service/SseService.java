@@ -10,7 +10,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.akatsuki.newsum.sse.kafka.WebtoonViewerEventPublisher;
 import com.akatsuki.newsum.sse.repository.SseEmitterRepository;
 import com.akatsuki.newsum.sse.repository.WebtoonSseEmitterRepository;
-import com.akatsuki.newsum.sse.service.viewer.WebtoonViewerTracker;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 public class SseService {
 
 	private final SseEmitterRepository sseEmitterRepository;
-	private final WebtoonViewerTracker webtoonViewerTracker;
 	private final WebtoonViewerEventPublisher viewerEventPublisher;
 	private final WebtoonSseEmitterRepository webtoonSseEmitterRepository;
 	private final Set<String> cleanedUp = ConcurrentHashMap.newKeySet();
@@ -59,71 +57,57 @@ public class SseService {
 	}
 
 	public SseEmitter startViewingWebtoon(Long webtoonId, String clientId) {
-		SseEmitter emitter = new SseEmitter();
+		SseEmitter emitter = webtoonSseEmitterRepository.save(webtoonId, clientId);
 
-		webtoonSseEmitterRepository.save(webtoonId, clientId, emitter);
+		emitter.onCompletion(() -> {
+			log.warn("🔥 onCompletion 실행됨: {}", clientId);
+			handleViewerDisconnect(webtoonId, clientId);
+		});
+		emitter.onTimeout(() -> {
+			log.warn("🔥 onTimeout 실행됨: {}", clientId);
+			handleViewerDisconnect(webtoonId, clientId);
+		});
+		emitter.onError(e -> {
+			log.warn("🔥 onError 실행됨: {}", clientId);
+			handleViewerDisconnect(webtoonId, clientId);
+		});
 
-		webtoonViewerTracker.addViewer(webtoonId, clientId);
 		viewerEventPublisher.publishJoin(webtoonId, clientId);
-
+		sendViewerCount(webtoonId);
 		try {
-			int count = webtoonViewerTracker.getViewerCount(webtoonId);
+			int count = webtoonSseEmitterRepository.getViewerCount(webtoonId);
 			emitter.send(SseEmitter.event()
 				.name("viewer-count")
 				.data("viewerCount: " + count));
 		} catch (IOException | IllegalStateException e) {
-			log.warn("초기 viewerCount 전송 실패: {}", e.getMessage());
 			emitter.completeWithError(e);
+			handleViewerDisconnect(webtoonId, clientId);
 		}
-
-		registerEmitterCleanup(emitter, webtoonId, clientId);
 		return emitter;
 	}
 
-	private void registerEmitterCleanup(SseEmitter emitter, Long webtoonId, String clientId) {
-		Runnable cleanupTask = () -> cleanup(webtoonId, clientId);
-
-		emitter.onCompletion(() -> {
-			log.info("[SSE 종료] clientId={}, webtoonId={} - onCompletion 호출 (탭 닫힘 또는 연결 정상 종료)", clientId, webtoonId);
-			cleanupTask.run();
-		});
-
-		emitter.onTimeout(() -> {
-			log.warn("[SSE 타임아웃] clientId={}, webtoonId={} - 일정 시간동안 이벤트 미전송", clientId, webtoonId);
-			cleanupTask.run();
-		});
-
-		emitter.onError(e -> {
-			log.error("[SSE 오류] clientId={}, webtoonId={} - 예외 발생: {}", clientId, webtoonId, e.toString());
-			cleanupTask.run();
-		});
-	}
-
-	private void cleanup(Long webtoonId, String clientId) {
+	public void handleViewerDisconnect(Long webtoonId, String clientId) {
 		String key = webtoonId + "-" + clientId;
 
 		if (!cleanedUp.add(key)) {
 			log.debug("중복 cleanup 무시: {}", key);
 			return;
 		}
-
-		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
-
-		webtoonViewerTracker.removeViewer(webtoonId, clientId);
-		viewerEventPublisher.publishLeave(webtoonId, clientId);
-		webtoonSseEmitterRepository.remove(webtoonId, clientId);
 		sendViewerCount(webtoonId);
+		viewerEventPublisher.publishLeave(webtoonId, clientId);
+
+		webtoonSseEmitterRepository.remove(webtoonId, clientId);
 	}
 
 	private void sendViewerCount(Long webtoonId) {
-		int count = webtoonViewerTracker.getViewerCount(webtoonId);
+		int count = webtoonSseEmitterRepository.getViewerCount(webtoonId);
 		String message = "viewerCount: " + count;
 
+		log.warn("브로드캐스트: {}명 시청 중", count);
 		webtoonSseEmitterRepository.getEmitters(webtoonId).forEach(emitter -> {
 			try {
 				emitter.send(SseEmitter.event().name("viewer-count").data(message));
 			} catch (IllegalStateException | IOException e) {
-				log.warn("SSE 전송 실패: {}", e.getMessage());
 				emitter.completeWithError(e);
 			}
 		});

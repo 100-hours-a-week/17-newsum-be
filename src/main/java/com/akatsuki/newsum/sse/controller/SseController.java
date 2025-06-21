@@ -43,7 +43,6 @@ public class SseController {
 		@RequestParam("webtoonId") Long webtoonId,
 		@RequestParam("clientId") String clientId
 	) {
-
 		SseEmitter response = sseService.startViewingWebtoon(webtoonId, clientId);
 		return ResponseEntity.ok(response);
 	}
