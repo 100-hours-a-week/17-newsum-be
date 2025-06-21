@@ -40,7 +40,7 @@ jobs:
       - name: Build & Push ARM image with tag `dev`
         run: |
           IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev"
-          docker buildx create --use --name multi-arch || true
+          docker buildx use multi-arch || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
           docker buildx build \
             --platform linux/arm64 \
             --tag "$IMAGE" \
