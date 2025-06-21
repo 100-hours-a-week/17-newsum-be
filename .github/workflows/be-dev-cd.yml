@@ -34,7 +34,7 @@ jobs:
       - name: Docker ECR Login
         run: |
           aws ecr get-login-password --region ap-northeast-2 \
-          | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          | sudo docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
       # arm 아키텍처로 이미지 빌드
       - name: Build & Push ARM image with tag `dev`
@@ -67,7 +67,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_KEY_PATH }} ubuntu@$IP << 'EOF'
               # ECR 로그인
               aws ecr get-login-password --region ap-northeast-2 \
-              | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+              | sudo docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
               # .env 생성
               curl -Ls https://${{ secrets.AWS_CLOUDFRONT_URL }}/tools/infisical-linux-arm64 -o infisical
@@ -80,12 +80,12 @@ jobs:
                 --domain=${{ secrets.INFISICAL_API_URL }} > /home/ubuntu/newsum-backend.env
 
               # 기존 컨테이너 중지 및 제거
-              docker stop newsum_backend || true
-              docker rm newsum_backend || true
+              sudo docker stop newsum_backend || true
+              sudo docker rm newsum_backend || true
 
               # 최신 이미지 pull 및 실행
-              docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev
-              docker run -d \
+              sudo docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev
+              sudo docker run -d \
                 --name newsum_backend \
                 --restart=always \
                 --env-file /home/ubuntu/newsum-backend.env \
