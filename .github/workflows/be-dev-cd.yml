@@ -56,8 +56,13 @@ jobs:
                       "Name=instance-state-name,Values=running" \
             --query 'Reservations[*].Instances[*].PrivateIpAddress' \
             --output text)
+          
+          # 한 줄로 변환
+          IPS_SINGLE_LINE=$(echo $IPS | tr '\n' ' ')
+          # 디버깅
           echo "IPS: $IPS"
-          echo "ips=$IPS" >> "$GITHUB_OUTPUT"
+          # 출력
+          echo "ips=$IPS_SINGLE_LINE" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to WAS EC2 via SSH
         run: |
