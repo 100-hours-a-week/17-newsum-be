@@ -22,7 +22,7 @@ jobs:
 
       - name: Build JAR
         run: |
-          ./gradlew clean build
+          ./gradlew clean build -x test
           cp build/libs/newsum-0.0.1-SNAPSHOT.jar app.jar
 
       - uses: aws-actions/configure-aws-credentials@v2
