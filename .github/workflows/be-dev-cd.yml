@@ -56,6 +56,7 @@ jobs:
                       "Name=instance-state-name,Values=running" \
             --query 'Reservations[*].Instances[*].PrivateIpAddress' \
             --output text)
+          echo "IPS: $IPS"
           echo "ips=$IPS" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to WAS EC2 via SSH
