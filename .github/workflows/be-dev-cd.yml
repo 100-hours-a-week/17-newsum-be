@@ -109,6 +109,6 @@ jobs:
                 $ECR_REGISTRY/$ECR_REPO:dev
           
               # 🔐 환경변수 파일 삭제
-              rm -f /home/ubuntu/newsum-backend.env
+              # rm -f /home/ubuntu/newsum-backend.env
           EOF
           done
