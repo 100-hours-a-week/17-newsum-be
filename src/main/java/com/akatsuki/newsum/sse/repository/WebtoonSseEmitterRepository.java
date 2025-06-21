@@ -10,7 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Component
 public class WebtoonSseEmitterRepository {
 
-	private static final long TIMEOUT = 5 * 60 * 1000L;
+	private static final long TIMEOUT = 10 * 60 * 1000L;
 	private final Map<Long, Map<String, SseEmitter>> viewers = new ConcurrentHashMap<>();
 
 	public void save(Long webtoonId, String clientId, SseEmitter emitter) {

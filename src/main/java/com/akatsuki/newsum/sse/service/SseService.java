@@ -1,6 +1,8 @@
 package com.akatsuki.newsum.sse.service;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -22,6 +24,7 @@ public class SseService {
 	private final WebtoonViewerTracker webtoonViewerTracker;
 	private final WebtoonViewerEventPublisher viewerEventPublisher;
 	private final WebtoonSseEmitterRepository webtoonSseEmitterRepository;
+	private final Set<String> cleanedUp = ConcurrentHashMap.newKeySet();
 
 	public SseEmitter subscribe(String uuid) {
 		SseEmitter emitter = sseEmitterRepository.saveAnonymous(uuid);
@@ -97,6 +100,13 @@ public class SseService {
 	}
 
 	private void cleanup(Long webtoonId, String clientId) {
+		String key = webtoonId + "-" + clientId;
+
+		if (!cleanedUp.add(key)) {
+			log.debug("중복 cleanup 무시: {}", key);
+			return;
+		}
+
 		log.info("SSE 종료: webtoonId={}, clientId={}", webtoonId, clientId);
 
 		webtoonViewerTracker.removeViewer(webtoonId, clientId);
