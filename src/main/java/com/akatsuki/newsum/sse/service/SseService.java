@@ -58,31 +58,18 @@ public class SseService {
 
 	public SseEmitter startViewingWebtoon(Long webtoonId, String clientId) {
 		SseEmitter emitter = webtoonSseEmitterRepository.save(webtoonId, clientId);
+		viewerEventPublisher.publishJoin(webtoonId, clientId);
 
 		emitter.onCompletion(() -> {
-			log.warn("🔥 onCompletion 실행됨: {}", clientId);
 			handleViewerDisconnect(webtoonId, clientId);
 		});
 		emitter.onTimeout(() -> {
-			log.warn("🔥 onTimeout 실행됨: {}", clientId);
 			handleViewerDisconnect(webtoonId, clientId);
 		});
 		emitter.onError(e -> {
-			log.warn("🔥 onError 실행됨: {}", clientId);
 			handleViewerDisconnect(webtoonId, clientId);
 		});
 
-		viewerEventPublisher.publishJoin(webtoonId, clientId);
-		sendViewerCount(webtoonId);
-		try {
-			int count = webtoonSseEmitterRepository.getViewerCount(webtoonId);
-			emitter.send(SseEmitter.event()
-				.name("viewer-count")
-				.data("viewerCount: " + count));
-		} catch (IOException | IllegalStateException e) {
-			emitter.completeWithError(e);
-			handleViewerDisconnect(webtoonId, clientId);
-		}
 		return emitter;
 	}
 
@@ -93,23 +80,8 @@ public class SseService {
 			log.debug("중복 cleanup 무시: {}", key);
 			return;
 		}
-		sendViewerCount(webtoonId);
+
 		viewerEventPublisher.publishLeave(webtoonId, clientId);
-
 		webtoonSseEmitterRepository.remove(webtoonId, clientId);
-	}
-
-	private void sendViewerCount(Long webtoonId) {
-		int count = webtoonSseEmitterRepository.getViewerCount(webtoonId);
-		String message = "viewerCount: " + count;
-
-		log.warn("브로드캐스트: {}명 시청 중", count);
-		webtoonSseEmitterRepository.getEmitters(webtoonId).forEach(emitter -> {
-			try {
-				emitter.send(SseEmitter.event().name("viewer-count").data(message));
-			} catch (IllegalStateException | IOException e) {
-				emitter.completeWithError(e);
-			}
-		});
 	}
 }
