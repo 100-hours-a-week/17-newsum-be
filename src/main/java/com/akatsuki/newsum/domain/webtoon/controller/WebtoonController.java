@@ -1,5 +1,7 @@
 package com.akatsuki.newsum.domain.webtoon.controller;
 
+import static com.akatsuki.newsum.common.dto.ResponseCodeAndMessage.*;
+
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +23,7 @@ import com.akatsuki.newsum.common.pagination.model.cursor.Cursor;
 import com.akatsuki.newsum.common.pagination.model.page.CursorPage;
 import com.akatsuki.newsum.common.security.UserDetailsImpl;
 import com.akatsuki.newsum.domain.notification.application.usecase.NotificationUseCase;
+import com.akatsuki.newsum.domain.webtoon.dto.TodayWebtoonsResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonCardDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonDetailResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
@@ -195,6 +198,13 @@ public class WebtoonController {
 			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_LIKE_SUCCESS, dto)
 		);
 
+	}
+
+	@GetMapping("/todayWebtoons")
+	public ResponseEntity<ApiResponse<TodayWebtoonsResponse>> todayWebtoons(
+	) {
+		TodayWebtoonsResponse response = webtoonService.getAllTodayNewsCards();
+		return ResponseEntity.ok(ApiResponse.success(WEBTOON_TODAY_SUCCESS, response));
 	}
 
 	private Long getUserId(
