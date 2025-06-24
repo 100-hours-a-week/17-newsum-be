@@ -311,13 +311,15 @@ public class WebtoonService {
 
 	@Transactional
 	public void saveimageprompts(ImageGenerationApiRequest request) {
+		Category category = request.category().toEnumOrElse(Category.IT);
+
 		ImageGenerationQueue entity = ImageGenerationQueue.builder()
 			.workId(request.workId())
 			.aiAuthorId(request.aiAuthorId())
 			.title(request.title())
 			.content(request.content())
 			.keyword(request.keyword())
-			.category(request.category())
+			.category(category)
 			.reportUrl(request.reportUrl())
 			.description1(request.description1())
 			.description2(request.description2())
@@ -509,7 +511,7 @@ public class WebtoonService {
 
 		return new Webtoon(
 			aiAuthor,
-			Category.from(queue.getCategory()),
+			queue.getCategory(),
 			queue.getTitle(),
 			queue.getContent(),
 			thumbnailImageUrl
