@@ -33,6 +33,7 @@ import com.akatsuki.newsum.domain.user.repository.UserRepository;
 import com.akatsuki.newsum.domain.user.service.KeywordService;
 import com.akatsuki.newsum.domain.webtoon.dto.AiAuthorInfoDto;
 import com.akatsuki.newsum.domain.webtoon.dto.CreateWebtoonReqeust;
+import com.akatsuki.newsum.domain.webtoon.dto.TodayWebtoonsResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonCardDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonDetailResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
@@ -193,6 +194,14 @@ public class WebtoonService {
 		return webtoonRepository.findTodayNewsTop3().stream()
 			.map(this::mapToCardDto)
 			.toList();
+	}
+
+	public TodayWebtoonsResponse getAllTodayNewsCards() {
+		List<WebtoonCardDto> dtos = webtoonRepository.findTodayNews().stream()
+			.map(this::mapToCardDto)
+			.toList();
+
+		return new TodayWebtoonsResponse(dtos);
 	}
 
 	public Map<String, List<WebtoonCardDto>> getWebtoonsByCategoryLimit3() {

@@ -25,4 +25,6 @@ public interface WebtoonQueryRepository {
 	List<Webtoon> searchByTitleContaining(String query, Cursor cursor, int size);
 
 	List<Webtoon> searchByUserKeywordBookmarks(String query, Cursor cursor, int size);
+
+	List<Webtoon> findTodayNews();
 }

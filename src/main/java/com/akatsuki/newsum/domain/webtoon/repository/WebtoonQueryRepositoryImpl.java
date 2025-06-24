@@ -198,6 +198,19 @@ public class WebtoonQueryRepositoryImpl implements WebtoonQueryRepository {
 		);
 	}
 
+	@Override
+	public List<Webtoon> findTodayNews() {
+		LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+		LocalDateTime startOfTomorrow = startOfToday.plusDays(1);
+
+		return queryFactory
+			.selectFrom(webtoon)
+			.where(webtoon.createdAt.goe(startOfToday)
+				.and(webtoon.createdAt.lt(startOfTomorrow)))
+			.orderBy(webtoon.createdAt.desc())
+			.fetch();
+	}
+
 	private QueryFragment buildQueryFragment(Cursor cursor) {
 		CursorPageQueryBuilder<Cursor> queryBuilder = cursorQueryRegistry.resolve(QWebtoon.class, cursor,
 			QueryEngineType.QUERYDSL);
