@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [ self-hosted, linux, X64 ]
+    runs-on: [ self-hosted, linux, X64 ] 
 
     steps:
       - uses: actions/checkout@v3
@@ -36,11 +36,32 @@ jobs:
           aws ecr get-login-password --region ap-northeast-2 \
           | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
+      # Docker Buildx 설치 및 설정
+      - name: Setup Docker Buildx
+        run: |
+          BUILDX_VERSION="v0.24.0" # <-- Buildx 버전 명시
+          BUILDX_DIR="/usr/local/lib/docker/cli-plugins"
+          BUILDX_BIN="$BUILDX_DIR/docker-buildx"
+
+          sudo mkdir -p "$BUILDX_DIR"
+
+          # 러너 아키텍처에 맞는 Buildx 바이너리 다운로드 (X64 러너이므로 linux-amd64)
+          BUILDX_URL="https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+
+          echo "Downloading buildx from $BUILDX_URL to $BUILDX_BIN"
+          sudo curl -L "$BUILDX_URL" -o "$BUILDX_BIN"
+          sudo chmod a+x "$BUILDX_BIN"
+
+          echo "Docker Buildx version after setup:"
+          docker buildx version # 설치 확인을 위한 명령
+
       # arm 아키텍처로 이미지 빌드
       - name: Build & Push ARM image with tag `dev`
         run: |
           IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev"
-          docker buildx use multi-arch || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
+          docker buildx inspect multi-arch >/dev/null 2>&1 || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
+          docker buildx use multi-arch
+          
           docker buildx build \
             --platform linux/arm64 \
             --tag "$IMAGE" \
@@ -94,8 +115,8 @@ jobs:
                 --token=$INFISICAL_TOKEN \
                 --format=dotenv \
                 --domain=$INFISICAL_API_URL > /home/ubuntu/newsum-backend.env
-              
-              # value에 따옴표 제거
+          
+              # value에 따옴표 제거 (Infisical에서 문자열이 따옴표로 감싸져 나올 때 유용)
               sed -i "s/=['\"]\([^'\"]*\)['\"]$/=\1/" /home/ubuntu/newsum-backend.env
 
               # 기존 컨테이너 중지 및 제거
