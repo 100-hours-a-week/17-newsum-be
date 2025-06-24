@@ -34,14 +34,14 @@ jobs:
       - name: Docker ECR Login
         run: |
           aws ecr get-login-password --region ap-northeast-2 \
-          | sudo docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
       # arm 아키텍처로 이미지 빌드
       - name: Build & Push ARM image with tag `dev`
         run: |
           IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev"
-          sudo -E docker buildx use multi-arch || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
-          sudo -E docker buildx build \
+          docker buildx use multi-arch || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
+          docker buildx build \
             --platform linux/arm64 \
             --tag "$IMAGE" \
             --push \
@@ -83,7 +83,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP <<-EOF
               # ECR 로그인
               aws ecr get-login-password --region ap-northeast-2 \
-              | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
+              | docker login --username AWS --password-stdin $ECR_REGISTRY
 
               # .env 생성
               curl -Ls https://$INFISICAL_URL/tools/infisical-linux-arm64 -o infisical
@@ -99,12 +99,12 @@ jobs:
               sed -i "s/=['\"]\([^'\"]*\)['\"]$/=\1/" /home/ubuntu/newsum-backend.env
 
               # 기존 컨테이너 중지 및 제거
-              sudo docker stop newsum_backend || true
-              sudo docker rm newsum_backend || true
+              docker stop newsum_backend || true
+              docker rm newsum_backend || true
 
               # 새 이미지 pull 후 실행
-              sudo docker pull $ECR_REGISTRY/$ECR_REPO:dev
-              sudo docker run -d \
+              docker pull $ECR_REGISTRY/$ECR_REPO:dev
+              docker run -d \
                 --name newsum_backend \
                 --restart=always \
                 --env-file /home/ubuntu/newsum-backend.env \
