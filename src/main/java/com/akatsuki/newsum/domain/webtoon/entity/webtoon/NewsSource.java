@@ -38,4 +38,8 @@ public class NewsSource {
 		this.headline = headline;
 		this.url = url;
 	}
+
+	public void setWebtoon(Webtoon webtoon) {
+		this.webtoon = webtoon;
+	}
 }
