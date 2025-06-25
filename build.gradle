@@ -34,7 +34,7 @@ dependencies {
 
     //prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    
+
     //resilience4j
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.1.0'
 
@@ -84,6 +84,8 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter:1.21.0'
     testImplementation "org.testcontainers:postgresql:1.21.0"
     testImplementation "com.redis:testcontainers-redis:2.2.2"
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.1.0'
+
 
     // WireMock for OpenFeign testing
     testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock'
