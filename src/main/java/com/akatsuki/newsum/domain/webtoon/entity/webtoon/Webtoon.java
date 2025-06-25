@@ -12,6 +12,7 @@ import com.akatsuki.newsum.common.entity.BaseTimeEntity;
 import com.akatsuki.newsum.domain.aiAuthor.entity.AiAuthor;
 import com.akatsuki.newsum.domain.webtoon.entity.comment.entity.Comment;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -68,14 +69,16 @@ public class Webtoon extends BaseTimeEntity {
 	@OneToMany(mappedBy = "webtoon")
 	private List<WebtoonDetail> details = new ArrayList<>();
 
-	@OneToMany(mappedBy = "webtoon")
+	//@OneToMany(mappedBy = "webtoon")
+	@OneToMany(mappedBy = "webtoon", cascade = CascadeType.ALL)
 	private List<NewsSource> newsSources = new ArrayList<>();
 
 	@OneToMany(fetch = FetchType.LAZY)
 	@JoinColumn(name = "webtoon_id")
 	private List<Comment> comments = new ArrayList<>();
 
-	public Webtoon(AiAuthor aiAuthor, Category category, String title, String content, String thumbnailImageUrl) {
+	public Webtoon(AiAuthor aiAuthor, Category category, String title, String content,
+		String thumbnailImageUrl) {
 		this.aiAuthor = aiAuthor;
 		this.category = category;
 		this.title = title;
@@ -122,5 +125,10 @@ public class Webtoon extends BaseTimeEntity {
 
 	public Webtoon(Long id) {
 		this.id = id;
+	}
+
+	public void addNewsSource(NewsSource newsSource) {
+		this.newsSources.add(newsSource);
+		newsSource.setWebtoon(this);
 	}
 }
