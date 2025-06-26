@@ -38,6 +38,15 @@ public class SseController {
 		}
 	}
 
+	@GetMapping(value = "/webtoon/connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public ResponseEntity<SseEmitter> subscribeToWebtoon(
+		@RequestParam("webtoonId") Long webtoonId,
+		@RequestParam("clientId") String clientId
+	) {
+		SseEmitter response = sseService.startViewingWebtoon(webtoonId, clientId);
+		return ResponseEntity.ok(response);
+	}
+
 	private String getUserId(String token) {
 		tokenProvider.validateToken(token);
 		return String.valueOf(tokenProvider.getUserIdFromToken(token));

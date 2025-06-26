@@ -31,9 +31,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation platform('org.springframework.cloud:spring-cloud-dependencies:2023.0.5')
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.kafka:spring-kafka'
 
     //prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     //resilience4j
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.1.0'
@@ -84,7 +86,7 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter:1.21.0'
     testImplementation "org.testcontainers:postgresql:1.21.0"
     testImplementation "com.redis:testcontainers-redis:2.2.2"
-    testImplementation 'com.tngtech.archunit:archunit-junit5:1.1.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.2.1'
 
 
     // WireMock for OpenFeign testing

@@ -1,5 +1,6 @@
 package com.akatsuki.newsum.cache;
 
+import java.time.Duration;
 import java.util.Set;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -42,4 +43,11 @@ public class RedisService {
 		return redisTemplate.keys(pattern);
 	}
 
+	public void setExpire(String key, Duration ttl) {
+		redisTemplate.expire(key, ttl);
+	}
+
+	public Long getSetSize(String key) {
+		return redisTemplate.opsForSet().size(key);
+	}
 }
