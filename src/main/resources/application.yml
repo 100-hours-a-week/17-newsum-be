@@ -1,14 +1,10 @@
 spring:
   application:
     name: newsum-be
-
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-
   config:
     import: optional:file:.env[.properties]
-    activate:
-      on-profile: local  # ✅ 여기도 합침
 
   datasource:
     url: ${DB_URL}
@@ -16,12 +12,7 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-
-  kafka: # ✅ 올바른 위치
+  kafka: # ✅ [추가된 Kafka 설정]
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:newsum-like-consumer}
@@ -35,15 +26,13 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   jpa:
-    hibernate:
-      ddl-auto: validate  # ✅ local에서 validate
     open-in-view: false
-    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_batch_fetch_size: 100
+    show-sql: false
 
   flyway:
     enabled: true
@@ -107,11 +96,3 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
-
-logging:
-  level:
-    org:
-      apache:
-        coyote:
-          http11: trace
-    com.akatsuki.newsum: debug
