@@ -14,7 +14,7 @@ spring:
       port: ${REDIS_PORT}
 
   kafka: # ✅ [수정한 부분 - Kafka 추가]
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:newsum-like-consumer}
       auto-offset-reset: earliest
