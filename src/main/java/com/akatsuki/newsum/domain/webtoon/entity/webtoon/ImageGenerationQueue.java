@@ -41,9 +41,13 @@ public class ImageGenerationQueue {
 
 	@Column(name = "title")
 	private String title;
+	
+	//@Column(name = "category")
+	//private String category;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "category")
-	private String category;
+	private Category category;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "keyword", columnDefinition = "jsonb")
@@ -93,5 +97,9 @@ public class ImageGenerationQueue {
 
 	public List<String> getDescriptions() {
 		return List.of(description1, description2, description3, description4);
+	}
+
+	public boolean isCompleted() {
+		return this.status.equals(GenerationStatus.COMPLETED);
 	}
 }

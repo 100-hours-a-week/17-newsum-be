@@ -1,17 +1,15 @@
-name: Backend Dev CD
+name: Backend Dev Docker CD
 
 on:
   push:
-    branches:
-      - dev
+    branches: [ dev ]
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
 
 jobs:
-  build-for-deploy:
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: [ self-hosted, linux, X64 ] 
 
     steps:
       - uses: actions/checkout@v3
@@ -21,87 +19,120 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
 
-      # 빌드하면서 테스트도 진행
-      - name: Build with Gradle
+      - name: Build JAR
         run: |
-          ./gradlew clean build
-          mkdir -p deploy
-          cp build/libs/*.jar deploy/
+          ./gradlew clean build -x test
+          cp build/libs/newsum-0.0.1-SNAPSHOT.jar app.jar
 
-      - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
+      - uses: aws-actions/configure-aws-credentials@v2
         with:
-          name: deploy-jar
-          path: deploy/*.jar
-          retention-days: 1
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ap-northeast-2
 
-  # Deployment job (only runs on push to dev)
-  deploy:
-    needs: build-for-deploy
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download deployment artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: deploy-jar
-          path: build/libs/
-
-      - name: Setup SSH
+      - name: Docker ECR Login
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY_DEV }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.GCP_VM_DOMAIN_DEV }} >> ~/.ssh/known_hosts
+          aws ecr get-login-password --region ap-northeast-2 \
+          | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-      - name: Install Infisical CLI from CloudFront
+      # Docker Buildx 설치 및 설정
+      - name: Setup Docker Buildx
         run: |
-          curl -L https://${{secrets.AWS_CLOUDFRONT_URL}}/tools/infisical-linux-amd64 -o infisical
-          chmod +x infisical
-          sudo mv infisical /usr/local/bin/infisical
+          BUILDX_VERSION="v0.24.0" # <-- Buildx 버전 명시
+          BUILDX_DIR="/usr/local/lib/docker/cli-plugins"
+          BUILDX_BIN="$BUILDX_DIR/docker-buildx"
 
-      - name: Fetch .env from Infisical and upload to VM
+          sudo mkdir -p "$BUILDX_DIR"
+
+          # 러너 아키텍처에 맞는 Buildx 바이너리 다운로드 (X64 러너이므로 linux-amd64)
+          BUILDX_URL="https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+
+          echo "Downloading buildx from $BUILDX_URL to $BUILDX_BIN"
+          sudo curl -L "$BUILDX_URL" -o "$BUILDX_BIN"
+          sudo chmod a+x "$BUILDX_BIN"
+
+          echo "Docker Buildx version after setup:"
+          docker buildx version # 설치 확인을 위한 명령
+
+      # arm 아키텍처로 이미지 빌드
+      - name: Build & Push ARM image with tag `dev`
         run: |
-          infisical export \
-            --env=${{ secrets.INFISICAL_ENV_DEV }} \
-            --projectId=${{ secrets.INFISICAL_PROJECT_ID }} \
-            --token=${{ secrets.INFISICAL_TOKEN_DEV }} \
-            --format=dotenv \
-            --domain=${{ secrets.INFISICAL_API_URL }} \
-            > .env
-
-          scp .env ${{ secrets.GCP_VM_USER_DEV }}@${{ secrets.GCP_VM_DOMAIN_DEV }}:/home/${{ secrets.GCP_VM_USER_DEV }}/be/.env
-
-      - name: Upload backend JAR to GCP
+          IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:dev"
+          docker buildx inspect multi-arch >/dev/null 2>&1 || docker buildx create --name multi-arch --use --driver docker-container --bootstrap
+          docker buildx use multi-arch
+          
+          docker buildx build \
+            --platform linux/arm64 \
+            --tag "$IMAGE" \
+            --push \
+            .
+      # 태그로 인스턴스 IP 가져오기
+      - name: Get EC2 Private IPs by Tag
+        id: fetch
         run: |
-          scp build/libs/*.jar ${{ secrets.GCP_VM_USER_DEV }}@${{ secrets.GCP_VM_DOMAIN_DEV }}:/home/${{ secrets.GCP_VM_USER_DEV }}/be/
+          IPS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Role,Values=newsum-backend" \
+                      "Name=tag:Environment,Values=dev" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[*].Instances[*].PrivateIpAddress' \
+            --output text)
+          
+          # IP 리스트 디버깅 출력
+          echo "IPS: $IPS"
+          
+          # 줄바꿈 제거하고 공백 구분의 한 줄로 만들어 출력
+          IPS_SINGLE_LINE=$(echo $IPS | tr '\n' ' ')
+          echo "ips=$IPS_SINGLE_LINE" >> "$GITHUB_OUTPUT"
 
-      - name: Restart Spring Boot app on VM with .env and then delete it
+      - name: Deploy to WAS EC2 via SSH
         run: |
-          ssh ${{ secrets.GCP_VM_USER_DEV }}@${{ secrets.GCP_VM_DOMAIN_DEV }} '
-            cd /home/${{ secrets.GCP_VM_USER_DEV }}/be
-      
-            if [ -f backend.pid ]; then
-              echo "Stopping existing application..."
-              kill $(cat backend.pid) 2>/dev/null || true
-              rm -f backend.pid
-              sleep 3
-            fi
-      
-            echo "Starting application with environment from .env..."
-            nohup env $(grep -v '^#' .env | xargs) java -jar newsum-0.0.1-SNAPSHOT.jar > backend.log 2>&1 &
-            echo $! > backend.pid
-      
-            sleep 5
-            if ps -p $(cat backend.pid) > /dev/null; then
-                echo "✅ Application started with PID: $(cat backend.pid)"
-                echo "Deleting .env file for security..."
-                rm -f .env
-              else
-                echo "❌ Failed to start application"
-                exit 1
-            fi
-          '
+          # GitHub Actions 시크릿을 쉘 변수로 먼저 할당
+          ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
+          ECR_REPO=${{ secrets.ECR_REPO }}
+          SSH_KEY_PATH=${{ secrets.SSH_KEY_PATH }}
+          INFISICAL_URL=${{ secrets.AWS_CLOUDFRONT_URL }}
+          INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECT_ID }}
+          INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN_DEV }}
+          INFISICAL_ENV=${{ secrets.INFISICAL_ENV_DEV }}
+          INFISICAL_API_URL=${{ secrets.INFISICAL_API_URL }}
+          
+          for IP in ${{ steps.fetch.outputs.ips }}; do
+            echo "🚀 배포 중: $IP"
+
+            # Self-hosted-runner 내부 키 경로
+            ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP <<-EOF
+              # ECR 로그인
+              aws ecr get-login-password --region ap-northeast-2 \
+              | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+              # .env 생성
+              curl -Ls https://$INFISICAL_URL/tools/infisical-linux-arm64 -o infisical
+              chmod +x infisical && sudo mv infisical /usr/local/bin/infisical
+              infisical export \
+                --env=$INFISICAL_ENV \
+                --projectId=$INFISICAL_PROJECT_ID \
+                --token=$INFISICAL_TOKEN \
+                --format=dotenv \
+                --domain=$INFISICAL_API_URL > /home/ubuntu/newsum-backend.env
+          
+              # value에 따옴표 제거 (Infisical에서 문자열이 따옴표로 감싸져 나올 때 유용)
+              sed -i "s/=['\"]\([^'\"]*\)['\"]$/=\1/" /home/ubuntu/newsum-backend.env
+
+              # 기존 컨테이너 중지 및 제거
+              docker stop newsum_backend || true
+              docker rm newsum_backend || true
+
+              # 새 이미지 pull 후 실행
+              docker pull $ECR_REGISTRY/$ECR_REPO:dev
+              docker run -d \
+                --name newsum_backend \
+                --restart=always \
+                --env-file /home/ubuntu/newsum-backend.env \
+                -p 8080:8080 \
+                $ECR_REGISTRY/$ECR_REPO:dev
+          
+              # 🔐 환경변수 파일 삭제
+              rm -f /home/ubuntu/newsum-backend.env
+          EOF
+          done

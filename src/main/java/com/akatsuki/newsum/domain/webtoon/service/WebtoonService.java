@@ -32,7 +32,7 @@ import com.akatsuki.newsum.domain.user.entity.User;
 import com.akatsuki.newsum.domain.user.repository.UserRepository;
 import com.akatsuki.newsum.domain.user.service.KeywordService;
 import com.akatsuki.newsum.domain.webtoon.dto.AiAuthorInfoDto;
-import com.akatsuki.newsum.domain.webtoon.dto.CreateWebtoonReqeust;
+import com.akatsuki.newsum.domain.webtoon.dto.TodayWebtoonsResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonCardDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonDetailResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
@@ -158,31 +158,6 @@ public class WebtoonService {
 			commentCount);
 	}
 
-	@Transactional
-	public void createWebtoon(CreateWebtoonReqeust request) {
-		AiAuthor aiAuthor = findAiAuthorById(request.aiAuthorId());
-
-		Webtoon webtoon = new Webtoon(aiAuthor,
-			Category.valueOf(request.category()),
-			request.title(),
-			request.content(),
-			request.thumbnailImageUrl());
-
-		Webtoon save = webtoonRepository.save(webtoon);
-
-		List<NewsSource> newsSources = request.sourceNews().stream()
-			.map(newsSourceDto -> new NewsSource(save, newsSourceDto.headline(), newsSourceDto.url()))
-			.toList();
-
-		List<WebtoonDetail> webtoonDetails = request.slides().stream()
-			.map(webtoonSlideDto -> new WebtoonDetail(save, webtoonSlideDto.imageUrl(), webtoonSlideDto.content(),
-				webtoonSlideDto.slideSeq()))
-			.toList();
-
-		webtoonDetailRepository.saveAll(webtoonDetails);
-		newsSourceRepository.saveAll(newsSources);
-	}
-
 	public List<WebtoonCardDto> getTop3TodayByViewCount() {
 		return webtoonRepository.findTop3TodayByViewCount().stream()
 			.map(this::mapToCardDto)
@@ -193,6 +168,14 @@ public class WebtoonService {
 		return webtoonRepository.findTodayNewsTop3().stream()
 			.map(this::mapToCardDto)
 			.toList();
+	}
+
+	public TodayWebtoonsResponse getAllTodayNewsCards() {
+		List<WebtoonCardDto> dtos = webtoonRepository.findTodayNews().stream()
+			.map(this::mapToCardDto)
+			.toList();
+
+		return new TodayWebtoonsResponse(dtos);
 	}
 
 	public Map<String, List<WebtoonCardDto>> getWebtoonsByCategoryLimit3() {
@@ -302,13 +285,15 @@ public class WebtoonService {
 
 	@Transactional
 	public void saveimageprompts(ImageGenerationApiRequest request) {
+		Category category = request.category().toEnumOrElse(Category.IT);
+
 		ImageGenerationQueue entity = ImageGenerationQueue.builder()
 			.workId(request.workId())
 			.aiAuthorId(request.aiAuthorId())
 			.title(request.title())
 			.content(request.content())
 			.keyword(request.keyword())
-			.category(request.category())
+			.category(category)
 			.reportUrl(request.reportUrl())
 			.description1(request.description1())
 			.description2(request.description2())
@@ -336,13 +321,26 @@ public class WebtoonService {
 		validateImageLinks(imageLinks);
 
 		ImageGenerationQueue queue = findQueueById(request.requestId());
+		validateNonCompletedQueue(queue);
+
 		List<String> descriptions = queue.getDescriptions();
 
 		Webtoon webtoon = mapToWebtoonEntity(queue, parseThumbnailImage(imageLinks));
 		List<WebtoonDetail> details = mapToWebtoonDetails(webtoon, descriptions, parseImageDescriptions(imageLinks));
+
+		String reportUrl = queue.getReportUrl();
+		NewsSource source = new NewsSource(null, "뉴스요약보고서", reportUrl);
+		webtoon.addNewsSource(source);
+
 		webtoonRepository.save(webtoon);
 		webtoonDetailRepository.saveAll(details);
 		queue.completed();
+	}
+
+	private void validateNonCompletedQueue(ImageGenerationQueue queue) {
+		if (queue.isCompleted()) {
+			throw new BusinessException(ErrorCodeAndMessage.IMAGE_GENERATION_QUEUE_ALREADY_COMPLETED);
+		}
 	}
 
 	private String parseThumbnailImage(List<String> imageLinks) {
@@ -492,7 +490,7 @@ public class WebtoonService {
 
 		return new Webtoon(
 			aiAuthor,
-			Category.from(queue.getCategory()),
+			queue.getCategory(),
 			queue.getTitle(),
 			queue.getContent(),
 			thumbnailImageUrl

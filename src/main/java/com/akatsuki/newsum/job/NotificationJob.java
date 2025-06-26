@@ -15,7 +15,7 @@ public class NotificationJob {
 
 	public final NotificationUseCase notificationUseCase;
 
-	@Scheduled(cron = "0 0/1 * * * *")
+	@Scheduled(cron = "0 0 0 * * *")
 	public void deleteNotification() {
 		log.info("일주얼 전 알림 삭제 시작");
 		int rows = notificationUseCase.deleteBefore7Days();
