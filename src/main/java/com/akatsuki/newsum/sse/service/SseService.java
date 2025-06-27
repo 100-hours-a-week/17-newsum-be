@@ -84,4 +84,8 @@ public class SseService {
 		viewerEventPublisher.publishLeave(webtoonId, clientId);
 		webtoonSseEmitterRepository.remove(webtoonId, clientId);
 	}
+
+	public void leaveWebtoon(Long webtoonId, String clientId) {
+		viewerEventPublisher.publishLeave(webtoonId, clientId);
+	}
 }
