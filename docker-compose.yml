@@ -14,6 +14,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    container_name: postgres_exporter
+    restart: always
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://newsum123:newsum123@postgres:5432/newsum?sslmode=disable"
+    volumes:
+      - ./prometheus/postgres_exporter.yml:/postgres_exporter.yml
+    command:
+      - '--extend.query-path=/postgres_exporter.yml'
+    depends_on:
+      - postgres
+
   redis:
     image: redis:7
     container_name: redis_cache
@@ -48,6 +63,45 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+  #모니터링 추가
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis_exporter
+    restart: always
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - /Users/yunjin/Desktop/data_volume/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - redis-exporter
+      - postgres-exporter
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - /Users/yunjin/Desktop/data_volume:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 volumes:
   postgres_data:
