@@ -21,19 +21,23 @@ public class WebtoonViewerEventPublisher {
 
 	public void publishJoin(Long webtoonId, String clientId) {
 		String key = webtoonId + "-" + clientId + "-JOIN";
+		log.info("📡 Kafka 전송 메서드 수행 전 키값: {}", key);
 		if (dedupCache.isDuplicate(key)) {
 			log.debug("중복 JOIN 발행 무시: {}", key);
 			return;
 		}
 		kafkaTemplate.send("webtoon-viewer", new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.JOIN));
+		log.info("📡 Kafka 전송 send 메서드 수행 완료 : {}", key);
 	}
 
 	public void publishLeave(Long webtoonId, String clientId) {
 		String key = webtoonId + "-" + clientId + "-LEAVE";
+		log.info("📡 Kafka leave 전송 메서드  메서드 수행 전 키값  : {}", key);
 		if (dedupCache.isDuplicate(key)) {
 			log.debug("중복 LEAVE 발행 무시: {}", key);
 			return;
 		}
 		kafkaTemplate.send("webtoon-viewer", new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.LEAVE));
+		log.info("📡 Kafka 전송 leave 메서드  메서드 수행 완료: {}", key);
 	}
 }

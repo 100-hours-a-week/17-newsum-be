@@ -43,6 +43,7 @@ public class ViewerCountBroadcaster {
 		}
 
 		Long count = redisService.getSetSize(key);
+		log.info("📡 레디스 현재 사용자 수 갯수 전달 전 갯수 확인 : {}", count);
 		long viewerCount = count != null ? count : 0;
 
 		//사용자들에게 갯수 전달
