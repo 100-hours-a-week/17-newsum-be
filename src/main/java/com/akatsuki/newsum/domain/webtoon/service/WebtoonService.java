@@ -81,6 +81,7 @@ public class WebtoonService {
 	private final CursorPaginationService cursorPaginationService;
 	private final ImageGenerationQueueRepository imageGenerationQueueRepository;
 	private final KeywordService keywordService;
+	private final WebtoonStaticService webtoonStaticService;
 
 	private final int RECENT_WEBTOON_LIMIT = 4;
 	private final int RELATED_CATEGORY_SIZE = 2;
@@ -97,8 +98,8 @@ public class WebtoonService {
 	}
 
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
-		WebtoonStaticDto staticDto = getCachedWebtoonStaticInfo(webtoonId); // 캐시된 DTO
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+		WebtoonStaticDto staticDto = webtoonStaticService.getCachedWebtoonStaticInfo(webtoonId);
 
 		WebtoonLikeStatusDto likeStatus = getWebtoonLikeStatus(webtoonId, userId);
 		boolean isLiked = likeStatus.liked();
@@ -120,20 +121,7 @@ public class WebtoonService {
 			staticDto.createdAt()
 		);
 	}
-
-	public WebtoonStaticDto getCachedWebtoonStaticInfo(Long webtoonId) {
-		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
-		return new WebtoonStaticDto(
-			webtoon.getId(),
-			webtoon.getTitle(),
-			webtoon.getThumbnailImageUrl(),
-			mapWebToonSlides(webtoon),
-			mapAiAuthorToAiAuthorInfoDto(webtoon.getAiAuthor()),
-			webtoon.getViewCount(),
-			webtoon.getCreatedAt()
-		);
-	}
-
+	
 	@Transactional
 	public void updateRecentView(Long webtoonId, Long userId) {
 		if (userId == null) {
