@@ -166,6 +166,7 @@ public class WebtoonService {
 			.toList();
 	}
 
+	@Cacheable(value = "webtoon:today", key = "'todaywebtoons'")
 	public List<WebtoonCardDto> getTodayNewsCards() {
 		return webtoonRepository.findTodayNewsTop3().stream()
 			.map(this::mapToCardDto)
@@ -180,6 +181,7 @@ public class WebtoonService {
 		return new TodayWebtoonsResponse(dtos);
 	}
 
+	@Cacheable(value = "webtoon:category:top3", key = "'all'")
 	public Map<String, List<WebtoonCardDto>> getWebtoonsByCategoryLimit3() {
 		Map<String, List<WebtoonCardDto>> result = new LinkedHashMap<>();
 		for (Category category : Category.values()) {
