@@ -159,6 +159,7 @@ public class WebtoonService {
 		);
 	}
 
+	@Cacheable(value = "webtoon:top3:today", key = "'top3'")
 	public List<WebtoonCardDto> getTop3TodayByViewCount() {
 		return webtoonRepository.findTop3TodayByViewCount().stream()
 			.map(this::mapToCardDto)
