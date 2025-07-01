@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -141,21 +142,21 @@ public class WebtoonService {
 		webtoon.increaseViewCount();
 	}
 
+	@Cacheable(value = "webtoon:detail", key = "#webtoonId")
 	public WebtoonDetailResponse getWebtoonDetail(Long webtoonId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 
 		List<WebtoonCardDto> relatedNews = fetchRelatedNews(webtoon);
-
 		List<WebtoonSourceDto> sources = getNewsSources(webtoon);
-
 		LocalDateTime createdAt = webtoon.getCreatedAt();
-
 		Long commentCount = webtoon.getParentCommentCount();
 
-		return new WebtoonDetailResponse(sources,
+		return new WebtoonDetailResponse(
+			sources,
 			relatedNews,
 			createdAt,
-			commentCount);
+			commentCount
+		);
 	}
 
 	public List<WebtoonCardDto> getTop3TodayByViewCount() {
