@@ -40,6 +40,7 @@ import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSlideDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSourceDto;
+import com.akatsuki.newsum.domain.webtoon.dto.WebtoonStaticDto;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.Category;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.GenerationStatus;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.ImageGenerationQueue;
@@ -96,27 +97,38 @@ public class WebtoonService {
 	}
 
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
+		WebtoonStaticDto staticDto = getCachedWebtoonStaticInfo(webtoonId); // 캐시된 DTO
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 
 		WebtoonLikeStatusDto likeStatus = getWebtoonLikeStatus(webtoonId, userId);
 		boolean isLiked = likeStatus.liked();
 		long likeCount = likeStatus.likeCount();
 
-		boolean isBookmarked = false;
+		boolean isBookmarked =
+			userId != null && webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
 
-		if (userId != null) {
-			isBookmarked = webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
-
-		}
 		return new WebtoonResponse(
-			webtoon.getId(),
-			webtoon.getThumbnailImageUrl(),
-			webtoon.getTitle(),
-			mapWebToonSlides(webtoon),
-			mapAiAuthorToAiAuthorInfoDto(webtoon.getAiAuthor()),
+			staticDto.id(),
+			staticDto.thumbnailImageUrl(),
+			staticDto.title(),
+			staticDto.slides(),
+			staticDto.authorInfo(),
 			isLiked,
 			isBookmarked,
 			likeCount,
+			staticDto.viewCount(),
+			staticDto.createdAt()
+		);
+	}
+
+	public WebtoonStaticDto getCachedWebtoonStaticInfo(Long webtoonId) {
+		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+		return new WebtoonStaticDto(
+			webtoon.getId(),
+			webtoon.getTitle(),
+			webtoon.getThumbnailImageUrl(),
+			mapWebToonSlides(webtoon),
+			mapAiAuthorToAiAuthorInfoDto(webtoon.getAiAuthor()),
 			webtoon.getViewCount(),
 			webtoon.getCreatedAt()
 		);
