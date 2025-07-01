@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSlideDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSourceDto;
+import com.akatsuki.newsum.domain.webtoon.dto.WebtoonStaticDto;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.Category;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.GenerationStatus;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.ImageGenerationQueue;
@@ -79,6 +81,7 @@ public class WebtoonService {
 	private final CursorPaginationService cursorPaginationService;
 	private final ImageGenerationQueueRepository imageGenerationQueueRepository;
 	private final KeywordService keywordService;
+	private final WebtoonStaticService webtoonStaticService;
 
 	private final int RECENT_WEBTOON_LIMIT = 4;
 	private final int RELATED_CATEGORY_SIZE = 2;
@@ -96,31 +99,29 @@ public class WebtoonService {
 
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+		WebtoonStaticDto staticDto = webtoonStaticService.getCachedWebtoonStaticInfo(webtoonId);
 
 		WebtoonLikeStatusDto likeStatus = getWebtoonLikeStatus(webtoonId, userId);
 		boolean isLiked = likeStatus.liked();
 		long likeCount = likeStatus.likeCount();
 
-		boolean isBookmarked = false;
+		boolean isBookmarked =
+			userId != null && webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
 
-		if (userId != null) {
-			isBookmarked = webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
-
-		}
 		return new WebtoonResponse(
-			webtoon.getId(),
-			webtoon.getThumbnailImageUrl(),
-			webtoon.getTitle(),
-			mapWebToonSlides(webtoon),
-			mapAiAuthorToAiAuthorInfoDto(webtoon.getAiAuthor()),
+			staticDto.id(),
+			staticDto.thumbnailImageUrl(),
+			staticDto.title(),
+			staticDto.slides(),
+			staticDto.authorInfo(),
 			isLiked,
 			isBookmarked,
 			likeCount,
-			webtoon.getViewCount(),
-			webtoon.getCreatedAt()
+			staticDto.viewCount(),
+			staticDto.createdAt()
 		);
 	}
-
+	
 	@Transactional
 	public void updateRecentView(Long webtoonId, Long userId) {
 		if (userId == null) {
@@ -141,29 +142,31 @@ public class WebtoonService {
 		webtoon.increaseViewCount();
 	}
 
+	@Cacheable(value = "webtoon:detail", key = "#webtoonId")
 	public WebtoonDetailResponse getWebtoonDetail(Long webtoonId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 
 		List<WebtoonCardDto> relatedNews = fetchRelatedNews(webtoon);
-
 		List<WebtoonSourceDto> sources = getNewsSources(webtoon);
-
 		LocalDateTime createdAt = webtoon.getCreatedAt();
-
 		Long commentCount = webtoon.getParentCommentCount();
 
-		return new WebtoonDetailResponse(sources,
+		return new WebtoonDetailResponse(
+			sources,
 			relatedNews,
 			createdAt,
-			commentCount);
+			commentCount
+		);
 	}
 
+	@Cacheable(value = "webtoon:top3:today", key = "'top3'")
 	public List<WebtoonCardDto> getTop3TodayByViewCount() {
 		return webtoonRepository.findTop3TodayByViewCount().stream()
 			.map(this::mapToCardDto)
 			.toList();
 	}
 
+	@Cacheable(value = "webtoon:today", key = "'todaywebtoons'")
 	public List<WebtoonCardDto> getTodayNewsCards() {
 		return webtoonRepository.findTodayNewsTop3().stream()
 			.map(this::mapToCardDto)
@@ -178,6 +181,7 @@ public class WebtoonService {
 		return new TodayWebtoonsResponse(dtos);
 	}
 
+	@Cacheable(value = "webtoon:category:top3", key = "'all'")
 	public Map<String, List<WebtoonCardDto>> getWebtoonsByCategoryLimit3() {
 		Map<String, List<WebtoonCardDto>> result = new LinkedHashMap<>();
 		for (Category category : Category.values()) {
