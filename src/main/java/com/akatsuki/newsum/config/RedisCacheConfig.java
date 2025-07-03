@@ -24,8 +24,7 @@ public class RedisCacheConfig {
 
 	@Bean
 	public CacheManager cacheManager(RedisConnectionFactory cf) {
-		return RedisCacheManager.RedisCacheManagerBuilder
-			.fromConnectionFactory(cf)
+		return RedisCacheManager.builder(cf)
 			.cacheDefaults(redisCacheConfiguration())
 			.build();
 	}
