@@ -76,6 +76,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class RedisCacheConfig {
 
 	@Bean
+	//우리가 만든 JitterRedisCacheManager 을 사용
 	public CacheManager cacheManager(RedisConnectionFactory cf) {
 		Duration jitter = Duration.ofMinutes(2); // 최대 지터 범위
 
@@ -87,6 +88,7 @@ public class RedisCacheConfig {
 	}
 
 	@Bean
+	//레디스에 데이터를 캐시할때 어떻게 저장할 것인지 설정하는 함수
 	public RedisCacheConfiguration redisCacheConfiguration() {
 		ObjectMapper redisMapper = new ObjectMapper();
 		redisMapper.registerModule(new JavaTimeModule());
@@ -102,7 +104,7 @@ public class RedisCacheConfig {
 				.fromSerializer(new StringRedisSerializer()))
 			.serializeValuesWith(RedisSerializationContext.SerializationPair
 				.fromSerializer(new GenericJackson2JsonRedisSerializer(redisMapper)))
-			.disableCachingNullValues()
+			.disableCachingNullValues() //null 값에 대한 줄 제외
 			.entryTtl(Duration.ofMinutes(5)); // TTL은 여기서만 설정
 	}
 }

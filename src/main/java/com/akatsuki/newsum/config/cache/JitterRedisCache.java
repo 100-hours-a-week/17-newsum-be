@@ -55,6 +55,7 @@ public class JitterRedisCache extends RedisCache {
 		return new SimpleValueWrapper(storeValue);
 	}
 
+	//기존 TTL 에서
 	private Duration getTtlWithJitter() {
 		Duration baseTtl = getCacheConfiguration().getTtl();
 
@@ -64,6 +65,7 @@ public class JitterRedisCache extends RedisCache {
 
 		long jitterMillis = jitter.toMillis();
 		if (jitterMillis > 0) {
+			//랜덤값을 통해 ttl 시간을 늘림
 			long randomMillis = ThreadLocalRandom.current().nextLong(jitterMillis + 1);
 			return baseTtl.plusMillis(randomMillis);
 		}
