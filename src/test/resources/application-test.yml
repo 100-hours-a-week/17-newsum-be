@@ -7,7 +7,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/testdb
     driver-class-name: org.postgresql.Driver
     username: test_user
-    password: test_pass
+    password: newsum123
 
   jpa:
     hibernate:
@@ -77,6 +77,7 @@ decorator:
 
 logging:
   level:
+
     org:
       apache:
         coyote:
