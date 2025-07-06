@@ -69,7 +69,6 @@ public class Webtoon extends BaseTimeEntity {
 	@OneToMany(mappedBy = "webtoon")
 	private List<WebtoonDetail> details = new ArrayList<>();
 
-	//@OneToMany(mappedBy = "webtoon")
 	@OneToMany(mappedBy = "webtoon", cascade = CascadeType.ALL)
 	private List<NewsSource> newsSources = new ArrayList<>();
 
