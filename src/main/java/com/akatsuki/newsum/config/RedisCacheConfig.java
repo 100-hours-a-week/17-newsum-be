@@ -52,7 +52,7 @@ public class RedisCacheConfig {
 				.fromSerializer(new StringRedisSerializer()))
 			.serializeValuesWith(RedisSerializationContext.SerializationPair
 				.fromSerializer(new GenericJackson2JsonRedisSerializer(redisMapper)))
-			.disableCachingNullValues() //null 값에 대한 줄 제외
+			// .disableCachingNullValues() //null 값에 대한 줄 제외
 			.entryTtl(Duration.ofMinutes(5)); // TTL은 여기서만 설정
 	}
 }
