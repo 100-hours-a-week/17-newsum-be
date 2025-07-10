@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [ self-hosted, linux, X64 ]
+    runs-on: [ self-hosted, linux, X64, shared ]
 
     steps:
       - uses: actions/checkout@v3
