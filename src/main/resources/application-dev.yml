@@ -31,5 +31,5 @@ logging:
     org:
       apache:
         coyote:
-          http11: trace
-    com.akatsuki.newsum: debug  # ← 패키지 경로에 맞게 설정
+          http11: info
+    com.akatsuki.newsum: info  # ← 패키지 경로에 맞게 설정
