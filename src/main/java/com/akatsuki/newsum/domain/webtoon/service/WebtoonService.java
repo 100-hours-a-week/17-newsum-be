@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,7 +122,7 @@ public class WebtoonService {
 			staticDto.createdAt()
 		);
 	}
-	
+
 	@Transactional
 	public void updateRecentView(Long webtoonId, Long userId) {
 		if (userId == null) {
@@ -386,32 +387,27 @@ public class WebtoonService {
 	}
 
 	private List<WebtoonCardDto> fetchRelatedNews(Webtoon webtoon) {
-		List<Webtoon> webtoonByCategory = webtoonRepository.findWebtoonByCategory(webtoon.getCategory());
-		List<Webtoon> webtoonByAiAuthor = webtoonRepository.findWebtoonByAiAuthor(webtoon.getAiAuthor());
+		List<WebtoonCardDto> relatedNews = new ArrayList<>();
 
-		webtoonByCategory.remove(webtoon);
-		webtoonByAiAuthor.remove(webtoon);
+		// 1. 카테고리 기반 연관 웹툰을 랜덤으로 2개 가져옴
+		List<Webtoon> byCategory = webtoonRepository.findRandomWebtoonsByCategory(
+			webtoon.getCategory(),
+			webtoon.getId(),
+			PageRequest.of(0, RELATED_CATEGORY_SIZE)
+		);
+		relatedNews.addAll(byCategory.stream().map(this::mapToCardDto).toList());
 
-		webtoonByAiAuthor = removeDuplicateWebtoons(webtoonByAiAuthor, webtoonByCategory);
+		// 2. 이미 가져온 웹툰 ID 제외하고 작가 기반 연관 웹툰 2개 가져옴
+		List<Long> excludeIds = byCategory.stream().map(Webtoon::getId).toList();
+		List<Webtoon> byAiAuthor = webtoonRepository.findRandomWebtoonsByAiAuthor(
+			webtoon.getAiAuthor(),
+			webtoon.getId(),
+			excludeIds.isEmpty() ? List.of(-1L) : excludeIds,
+			PageRequest.of(0, RELATED_AI_AUTHOR_SIZE)
+		);
+		relatedNews.addAll(byAiAuthor.stream().map(this::mapToCardDto).toList());
 
-		int aiAuthorCount = Math.min(webtoonByAiAuthor.size(), RELATED_AI_AUTHOR_SIZE);
-		int categoryCount = Math.min(webtoonByCategory.size(), RELATED_NEWS_SIZE - aiAuthorCount);
-
-		Collections.shuffle(webtoonByCategory);
-		Collections.shuffle(webtoonByAiAuthor);
-
-		List<WebtoonCardDto> result = new ArrayList<>();
-		result.addAll(webtoonByCategory.stream()
-			.limit(categoryCount)
-			.map(this::mapWebToonCardDto)
-			.toList());
-
-		result.addAll(webtoonByAiAuthor.stream()
-			.limit(aiAuthorCount)
-			.map(this::mapWebToonCardDto)
-			.toList());
-
-		return result;
+		return relatedNews;
 	}
 
 	private List<Webtoon> removeDuplicateWebtoons(List<Webtoon> targetWebtoons, List<Webtoon> toRemoveWebtoons) {
