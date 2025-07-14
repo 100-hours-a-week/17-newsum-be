@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
@@ -23,7 +24,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class RedisCacheConfig {
 
 	@Bean
-	//우리가 만든 JitterRedisCacheManager 을 사용
 	public CacheManager cacheManager(RedisConnectionFactory cf) {
 		Duration jitter = Duration.ofMinutes(2); // 최대 지터 범위
 
@@ -35,7 +35,6 @@ public class RedisCacheConfig {
 	}
 
 	@Bean
-	//레디스에 데이터를 캐시할때 어떻게 저장할 것인지 설정하는 함수
 	public RedisCacheConfiguration redisCacheConfiguration() {
 		// ✅ ObjectMapper를 전역 Bean으로 등록하지 않고 여기서만 사용
 		ObjectMapper redisMapper = new ObjectMapper();

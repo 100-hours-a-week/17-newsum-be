@@ -7,11 +7,6 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-        generate_statistics: true
 
   data:
     redis:
@@ -36,11 +31,5 @@ logging:
     org:
       apache:
         coyote:
-          http11: trace
-      hibernate:
-        SQL: debug  # 실제 SQL 쿼리
-        stat: debug  # fetch count 등 통계 정보
-        type:
-          descriptor:
-            sql: trace  # 바인딩 파라미터 값까지 보고 싶을 때
-    com.akatsuki.newsum: debug
+          http11: info
+    com.akatsuki.newsum: info  # ← 패키지 경로에 맞게 설정
