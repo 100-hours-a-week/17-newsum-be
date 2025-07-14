@@ -13,6 +13,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.akatsuki.newsum.config.cache.JitterRedisCacheManager;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -24,10 +25,13 @@ public class RedisCacheConfig {
 
 	@Bean
 	public CacheManager cacheManager(RedisConnectionFactory cf) {
-		return RedisCacheManager.RedisCacheManagerBuilder
-			.fromConnectionFactory(cf)
-			.cacheDefaults(redisCacheConfiguration())
-			.build();
+		Duration jitter = Duration.ofMinutes(2); // 최대 지터 범위
+
+		return new JitterRedisCacheManager(
+			cf,
+			redisCacheConfiguration(),
+			jitter
+		);
 	}
 
 	@Bean
@@ -43,10 +47,11 @@ public class RedisCacheConfig {
 		);
 
 		return RedisCacheConfiguration.defaultCacheConfig()
-			.serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(
-				new StringRedisSerializer()))
-			.serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
-				new GenericJackson2JsonRedisSerializer(redisMapper)))
-			.entryTtl(Duration.ofMinutes(60));
+			.serializeKeysWith(RedisSerializationContext.SerializationPair
+				.fromSerializer(new StringRedisSerializer()))
+			.serializeValuesWith(RedisSerializationContext.SerializationPair
+				.fromSerializer(new GenericJackson2JsonRedisSerializer(redisMapper)))
+			// .disableCachingNullValues() //null 값에 대한 줄 제외
+			.entryTtl(Duration.ofMinutes(5)); // TTL은 여기서만 설정
 	}
 }

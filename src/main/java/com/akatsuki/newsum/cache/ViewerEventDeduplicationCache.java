@@ -16,7 +16,7 @@ public class ViewerEventDeduplicationCache {
 	@PostConstruct
 	public void init() {
 		this.cache = Caffeine.newBuilder()
-			.expireAfterWrite(1, TimeUnit.MINUTES)
+			.expireAfterWrite(5, TimeUnit.SECONDS)
 			.maximumSize(10_000)
 			.build();
 	}
