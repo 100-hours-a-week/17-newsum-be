@@ -98,6 +98,7 @@ public class WebtoonService {
 			.toList();
 	}
 
+	@Cacheable(value = "webtoon:content", key = "#webtoonId")
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 		WebtoonStaticDto staticDto = webtoonStaticService.getCachedWebtoonStaticInfo(webtoonId);
@@ -143,7 +144,7 @@ public class WebtoonService {
 		webtoon.increaseViewCount();
 	}
 
-	@Cacheable(value = "webtoon:detail", key = "#webtoonId")
+	//@Cacheable(value = "webtoon:detail", key = "#webtoonId")
 	public WebtoonDetailResponse getWebtoonDetail(Long webtoonId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 
