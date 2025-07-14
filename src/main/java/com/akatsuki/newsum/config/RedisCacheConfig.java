@@ -47,6 +47,6 @@ public class RedisCacheConfig {
 				new StringRedisSerializer()))
 			.serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
 				new GenericJackson2JsonRedisSerializer(redisMapper)))
-			.entryTtl(Duration.ofMinutes(5));
+			.entryTtl(Duration.ofMinutes(60));
 	}
 }
