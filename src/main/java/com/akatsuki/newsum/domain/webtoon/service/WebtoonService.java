@@ -100,7 +100,14 @@ public class WebtoonService {
 
 	@Cacheable(value = "webtoon:content", key = "#webtoonId")
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
-		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+		//Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+
+		Optional<Webtoon> webtoonOpt = findWebtoonWithAiAuthorById(webtoonId);
+
+		if (webtoonOpt.isEmpty()) {
+			return null;
+		}
+
 		WebtoonStaticDto staticDto = webtoonStaticService.getCachedWebtoonStaticInfo(webtoonId);
 
 		WebtoonLikeStatusDto likeStatus = getWebtoonLikeStatus(webtoonId, userId);
@@ -454,6 +461,10 @@ public class WebtoonService {
 	private Webtoon findWebtoonWithAiAuthorByIdOrThrow(Long webtoonId) {
 		return webtoonRepository.findWebtoonAndAiAuthorById(webtoonId)
 			.orElseThrow(WebtoonNotFoundException::new);
+	}
+
+	private Optional<Webtoon> findWebtoonWithAiAuthorById(Long webtoonId) {
+		return webtoonRepository.findWebtoonAndAiAuthorById(webtoonId);
 	}
 
 	private Webtoon findWebtoonWithNewSourceById(Long webtoonId) {
