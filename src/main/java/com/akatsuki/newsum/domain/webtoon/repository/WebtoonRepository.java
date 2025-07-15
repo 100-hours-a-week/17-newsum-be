@@ -22,11 +22,11 @@ public interface WebtoonRepository extends JpaRepository<Webtoon, Long>, Webtoon
 
 	List<Webtoon> searchByUserKeywordBookmarks(String ftsQuery, Cursor cursor, int size);
 
-	@Query("SELECT w FROM Webtoon w WHERE w.id != :webtoonId AND w.category = :category ORDER BY FUNCTION('RANDOM')")
+	@Query("SELECT w FROM Webtoon w WHERE w.id != :webtoonId AND w.category = :category ORDER BY w.viewCount DESC")
 	List<Webtoon> findRandomWebtoonsByCategory(@Param("category") Category category, @Param("webtoonId") Long webtoonId,
 		Pageable pageable);
 
-	@Query("SELECT w FROM Webtoon w WHERE w.id != :webtoonId AND w.aiAuthor = :aiAuthor AND w.id NOT IN :excludeIds ORDER BY FUNCTION('RANDOM')")
+	@Query("SELECT w FROM Webtoon w WHERE w.id != :webtoonId AND w.aiAuthor = :aiAuthor AND w.id NOT IN :excludeIds ORDER BY w.viewCount DESC")
 	List<Webtoon> findRandomWebtoonsByAiAuthor(
 		@Param("aiAuthor") AiAuthor aiAuthor,
 		@Param("webtoonId") Long webtoonId,

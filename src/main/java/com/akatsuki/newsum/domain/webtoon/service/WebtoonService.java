@@ -84,6 +84,7 @@ public class WebtoonService {
 	private final KeywordService keywordService;
 	private final WebtoonStaticService webtoonStaticService;
 
+	private final int BEFORE_RANDOM_REALTED_WEBTOON_SIZE = 10;
 	private final int RECENT_WEBTOON_LIMIT = 4;
 	private final int RELATED_CATEGORY_SIZE = 2;
 	private final int RELATED_AI_AUTHOR_SIZE = 2;
@@ -397,22 +398,40 @@ public class WebtoonService {
 	private List<WebtoonCardDto> fetchRelatedNews(Webtoon webtoon) {
 		List<WebtoonCardDto> relatedNews = new ArrayList<>();
 
-		// 1. 카테고리 기반 연관 웹툰을 랜덤으로 2개 가져옴
-		List<Webtoon> byCategory = webtoonRepository.findRandomWebtoonsByCategory(
+		// 1-1. 카테고리 기반 연관 웹툰을 조회수 기준으로 10개 가져옴
+		List<Webtoon> top10byCategory = webtoonRepository.findRandomWebtoonsByCategory(
 			webtoon.getCategory(),
 			webtoon.getId(),
-			PageRequest.of(0, RELATED_CATEGORY_SIZE)
+			PageRequest.of(0, BEFORE_RANDOM_REALTED_WEBTOON_SIZE)
 		);
+
+		// 1-2. 가져온 웹툰 10개를 랜덤 돌림
+		Collections.shuffle(top10byCategory);
+
+		// 1-3. 그 중 2개를 뽑아서 relatedNews로 선택
+		List<Webtoon> byCategory = top10byCategory.stream()
+			.limit(RELATED_CATEGORY_SIZE)
+			.toList();
+
 		relatedNews.addAll(byCategory.stream().map(this::mapToCardDto).toList());
 
-		// 2. 이미 가져온 웹툰 ID 제외하고 작가 기반 연관 웹툰 2개 가져옴
+		// 2-1. 이미 가져온 웹툰 ID 제외하고 작가 기반 연관 웹툰 10개 가져옴
 		List<Long> excludeIds = byCategory.stream().map(Webtoon::getId).toList();
-		List<Webtoon> byAiAuthor = webtoonRepository.findRandomWebtoonsByAiAuthor(
+		List<Webtoon> top10byAiAuthor = webtoonRepository.findRandomWebtoonsByAiAuthor(
 			webtoon.getAiAuthor(),
 			webtoon.getId(),
 			excludeIds.isEmpty() ? List.of(-1L) : excludeIds,
-			PageRequest.of(0, RELATED_AI_AUTHOR_SIZE)
+			PageRequest.of(0, BEFORE_RANDOM_REALTED_WEBTOON_SIZE)
 		);
+
+		// 2-2. 가져운 웹툰 10개를 랜덤 돌림
+		Collections.shuffle(top10byAiAuthor);
+
+		// 2-3. 그 중 2개를 뽑아서 relatedNews로 선택
+		List<Webtoon> byAiAuthor = top10byAiAuthor.stream()
+			.limit(RELATED_AI_AUTHOR_SIZE)
+			.toList();
+
 		relatedNews.addAll(byAiAuthor.stream().map(this::mapToCardDto).toList());
 
 		return relatedNews;
