@@ -399,7 +399,7 @@ public class WebtoonService {
 		List<WebtoonCardDto> relatedNews = new ArrayList<>();
 
 		// 1-1. 카테고리 기반 연관 웹툰을 조회수 기준으로 10개 가져옴
-		List<Webtoon> top10byCategory = webtoonRepository.findRandomWebtoonsByCategory(
+		List<Webtoon> top10byCategory = webtoonRepository.findTop10WebtoonsByCategory(
 			webtoon.getCategory(),
 			webtoon.getId(),
 			PageRequest.of(0, BEFORE_RANDOM_REALTED_WEBTOON_SIZE)
@@ -417,7 +417,7 @@ public class WebtoonService {
 
 		// 2-1. 이미 가져온 웹툰 ID 제외하고 작가 기반 연관 웹툰 10개 가져옴
 		List<Long> excludeIds = byCategory.stream().map(Webtoon::getId).toList();
-		List<Webtoon> top10byAiAuthor = webtoonRepository.findRandomWebtoonsByAiAuthor(
+		List<Webtoon> top10byAiAuthor = webtoonRepository.findTop10WebtoonsByAiAuthor(
 			webtoon.getAiAuthor(),
 			webtoon.getId(),
 			excludeIds.isEmpty() ? List.of(-1L) : excludeIds,
