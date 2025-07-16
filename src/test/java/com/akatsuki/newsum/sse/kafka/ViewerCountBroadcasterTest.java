@@ -54,7 +54,7 @@ public class ViewerCountBroadcasterTest {
 		Long viewerCount = 3L;
 		when(redisService.getSetSize(rediskey)).thenReturn(viewerCount);
 		when(emitterRepository.getEmittersWithClientIds(webtoonId)).thenReturn(
-			emitters);  //getEmittersWithClientIds의 메서드는 뭐인가?
+			emitters);
 
 		//when
 		broadcaster.onEvent(event);
@@ -68,5 +68,40 @@ public class ViewerCountBroadcasterTest {
 		verify(user1).send(any(SseEmitter.SseEventBuilder.class));
 		verify(user2).send(any(SseEmitter.SseEventBuilder.class));
 		verify(user3).send(any(SseEmitter.SseEventBuilder.class));
+	}
+
+	//case에서 Leave 이벤트 시
+	@Test
+	@DisplayName("사용자가 퇴장하면 redis_remove 수행하고 사용자에게 갯수 전달")
+	void testRemoveViewer() throws Exception {
+		//given
+		Long webtoonId = 1L;
+		String clientId = "clientId-123";  //나간 유저
+		String rediskey = "webtoon:viewers:" + webtoonId;
+
+		//client-123 퇴장
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.LEAVE);
+		SseEmitter user1 = mock(SseEmitter.class);
+		SseEmitter user2 = mock(SseEmitter.class);
+		SseEmitter user3 = mock(SseEmitter.class);
+
+		Map<String, SseEmitter> emitters = Map.of(
+			"client-I", user1,
+			"client-B", user2,
+			clientId, user3
+		);
+		//퇴장해서 2명남음
+		when(redisService.getSetSize(rediskey)).thenReturn(2L);
+		//map에 두명저장
+		when(emitterRepository.getEmittersWithClientIds(webtoonId)).thenReturn(emitters);
+
+		//when
+		broadcaster.onEvent(event);
+
+		//then
+		verify(redisService).removeSetValue(rediskey, clientId);
+		verify(user1).send(any(SseEmitter.SseEventBuilder.class));
+		verify(user2).send(any(SseEmitter.SseEventBuilder.class));
+
 	}
 }
