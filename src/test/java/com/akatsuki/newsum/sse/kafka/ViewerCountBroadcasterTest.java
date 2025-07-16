@@ -104,4 +104,26 @@ public class ViewerCountBroadcasterTest {
 		verify(user2).send(any(SseEmitter.SseEventBuilder.class));
 
 	}
+
+	@Test
+	@DisplayName("알 수 없는 이벤트일 경우 아무 작업 없이 로그만 출력")
+	void testRemoveViewerWithClientId() throws Exception {
+		// given
+		Long webtoonId = 1L;
+		String clientId = "clientId-123";
+		String redisKey = "webtoon:viewers:" + webtoonId;
+
+		// ViewerAction에 없는 가짜 이벤트 시뮬레이션을 위해 null 사용
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, null);
+
+		//when
+		broadcaster.onEvent(event);
+
+		// then
+		//호출이 없어야하기 때문에 never사용
+		verify(redisService, never()).addSetValue(any(), any());
+		verify(redisService, never()).removeSetValue(any(), any());
+		verify(emitterRepository).getEmittersWithClientIds(webtoonId);
+
+	}
 }
