@@ -37,21 +37,36 @@ public class ViewerCountBroadcasterTest {
 		String rediskey = "webtoon:viewers:" + webtoonId;
 
 		//client-A 입장
-		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, "client-A", ViewerAction.JOIN);
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.JOIN);
 
 		//3명의 sseEmiiter 객체 생성
 		SseEmitter user1 = mock(SseEmitter.class);
 		SseEmitter user2 = mock(SseEmitter.class);
 		SseEmitter user3 = mock(SseEmitter.class);
 
-		//사용자 저장 Map
+		//현재 사용자를 저장한 Map
 		Map<String, SseEmitter> emitters = Map.of(
 			"client-I", user1,
 			"client-B", user2,
 			"client-C", user3
 		);
+		//when 은 변수 선언이 불가능함
+		Long viewerCount = 3L;
+		when(redisService.getSetSize(rediskey)).thenReturn(viewerCount);
+		when(emitterRepository.getEmittersWithClientIds(webtoonId)).thenReturn(
+			emitters);  //getEmittersWithClientIds의 메서드는 뭐인가?
 
 		//when
 		broadcaster.onEvent(event);
+
+		//then
+		verify(redisService).addSetValue(rediskey, clientId);
+		verify(redisService).setExpire(eq(rediskey), any()); //any() 메서드의 의미
+
+		//유저들에게 새로운 사용자입장을 알림
+		//verify로 비교
+		verify(user1).send(any(SseEmitter.SseEventBuilder.class));
+		verify(user2).send(any(SseEmitter.SseEventBuilder.class));
+		verify(user3).send(any(SseEmitter.SseEventBuilder.class));
 	}
 }
