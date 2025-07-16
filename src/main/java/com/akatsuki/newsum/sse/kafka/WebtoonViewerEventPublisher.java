@@ -23,6 +23,7 @@ public class WebtoonViewerEventPublisher {
 		String key = webtoonId + "-" + clientId + "-JOIN";
 		log.info("📡 Kafka 전송 메서드 수행 전 키값: {}", key);
 		if (dedupCache.isDuplicate(key)) {
+			//값이 있어서 true일 경우
 			log.debug("중복 JOIN 발행 무시: {}", key);
 			return;
 		}
