@@ -12,4 +12,8 @@ public class ViewerActionString extends EnumString<ViewerAction> {
 	public static ViewerActionString from(String action) {
 		return new ViewerActionString(action);
 	}
+
+	public ViewerAction parsedAction() {
+		return this.toEnumOrElse(ViewerAction.UNKNOWN);
+	}
 }

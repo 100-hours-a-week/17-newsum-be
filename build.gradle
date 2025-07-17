@@ -114,7 +114,7 @@ clean {
 
 test {
     useJUnitPlatform()
-    finalizedBy jacocoTestReport // ✅ 테스트 끝나고 리포트 자동 생성
+    finalizedBy jacocoTestReport
 }
 
 // ✅ JaCoCo 설정 추가
@@ -123,10 +123,15 @@ jacoco {
 }
 
 jacocoTestReport {
-    dependsOn test // test 실행 후 report 생성
+    dependsOn test
     reports {
+        html.required = true
         xml.required = true
-        csv.required = false
-        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
     }
+
+    executionData fileTree(dir: "$buildDir", includes: [
+            "jacoco/test.exec"
+    ])
+    sourceDirectories.setFrom files(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom files(sourceSets.main.output)
 }

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import com.akatsuki.newsum.cache.ViewerEventDeduplicationCache;
-import com.akatsuki.newsum.sse.kafka.dto.ViewerAction;
+import com.akatsuki.newsum.sse.kafka.dto.ViewerActionString;
 import com.akatsuki.newsum.sse.kafka.dto.WebtoonViewerEvent;
 
 public class WebtoonViewerEventPublisherTest {
@@ -37,7 +37,8 @@ public class WebtoonViewerEventPublisherTest {
 
 		publisher.publishJoin(webtoonId, clientId);
 
-		verify(kafkaTemplate).send("webtoon-viewer", new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.JOIN));
+		verify(kafkaTemplate).send("webtoon-viewer",
+			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN")));
 	}
 
 	@Test
@@ -65,7 +66,8 @@ public class WebtoonViewerEventPublisherTest {
 
 		publisher.publishLeave(webtoonId, clientId);
 
-		verify(kafkaTemplate).send("webtoon-viewer", new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.LEAVE));
+		verify(kafkaTemplate).send("webtoon-viewer",
+			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN")));
 	}
 
 	@Test

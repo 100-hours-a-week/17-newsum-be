@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.akatsuki.newsum.cache.RedisService;
+import com.akatsuki.newsum.sse.kafka.dto.ViewerAction;
 import com.akatsuki.newsum.sse.kafka.dto.WebtoonViewerEvent;
 import com.akatsuki.newsum.sse.repository.WebtoonSseEmitterRepository;
 
@@ -32,11 +33,12 @@ public class ViewerCountBroadcaster {
 		Long webtoonId = event.webtoonId();
 		String clientId = event.clientId();
 		String key = "webtoon:viewers:" + webtoonId;
+		ViewerAction action = event.parsedAction();  // 안전하게 파싱된 enum
 
-		switch (event.action()) {
+		switch (action) {
 			case JOIN -> {
 				redisService.addSetValue(key, clientId);
-				redisService.setExpire(key, Duration.ofDays(1)); // TTL 설정
+				redisService.setExpire(key, Duration.ofDays(1));
 			}
 			case LEAVE -> redisService.removeSetValue(key, clientId);
 			default -> log.warn("알 수 없는 이벤트: {}", event);

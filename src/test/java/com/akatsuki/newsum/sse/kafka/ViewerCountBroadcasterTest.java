@@ -2,6 +2,7 @@ package com.akatsuki.newsum.sse.kafka;
 
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.akatsuki.newsum.cache.RedisService;
-import com.akatsuki.newsum.sse.kafka.dto.ViewerAction;
+import com.akatsuki.newsum.sse.kafka.dto.ViewerActionString;
 import com.akatsuki.newsum.sse.kafka.dto.WebtoonViewerEvent;
 import com.akatsuki.newsum.sse.repository.WebtoonSseEmitterRepository;
 
@@ -37,7 +38,7 @@ public class ViewerCountBroadcasterTest {
 		String rediskey = "webtoon:viewers:" + webtoonId;
 
 		//client-A 입장
-		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.JOIN);
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN"));
 
 		//3명의 sseEmiiter 객체 생성
 		SseEmitter user1 = mock(SseEmitter.class);
@@ -80,7 +81,7 @@ public class ViewerCountBroadcasterTest {
 		String rediskey = "webtoon:viewers:" + webtoonId;
 
 		//client-123 퇴장
-		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, ViewerAction.LEAVE);
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("LEAVE"));
 		SseEmitter user1 = mock(SseEmitter.class);
 		SseEmitter user2 = mock(SseEmitter.class);
 		SseEmitter user3 = mock(SseEmitter.class);
@@ -126,4 +127,42 @@ public class ViewerCountBroadcasterTest {
 		verify(emitterRepository).getEmittersWithClientIds(webtoonId);
 
 	}
+
+	@Test
+	@DisplayName("SseEmitter에서 IOException 발생 시 completeWithError와 repository.remove 호출됨")
+	void testEmitterSendIOException() throws Exception {
+		// given
+		Long webtoonId = 1L;
+		String clientId = "client-X";
+		String redisKey = "webtoon:viewers:" + webtoonId;
+
+		WebtoonViewerEvent event = new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN"));
+
+		// 예외 던지는 mock emitter
+		SseEmitter faultyEmitter = mock(SseEmitter.class);
+
+		//실제 이벤트객체 생성
+		SseEmitter.SseEventBuilder eventBuilder = SseEmitter
+			.event()
+			.name("viewer-count")
+			.data("viewerCount: 1");
+
+		doThrow(new IOException("Test exception"))
+			.when(faultyEmitter)
+			.send(any(SseEmitter.SseEventBuilder.class));
+
+		Map<String, SseEmitter> emitters = Map.of(clientId, faultyEmitter);
+
+		when(redisService.getSetSize(redisKey)).thenReturn(1L);
+		when(emitterRepository.getEmittersWithClientIds(webtoonId)).thenReturn(emitters);
+
+		// when
+		broadcaster.onEvent(event);
+
+		// then
+		verify(faultyEmitter).send(any(SseEmitter.SseEventBuilder.class));
+		verify(faultyEmitter).completeWithError(any(IOException.class));
+		verify(emitterRepository).remove(webtoonId, clientId);
+	}
+
 }

@@ -4,6 +4,10 @@ package com.akatsuki.newsum.sse.kafka.dto;
 public record WebtoonViewerEvent(
 	Long webtoonId,
 	String clientId,
-	ViewerAction action
+	ViewerActionString action
 ) {
+	public ViewerAction parsedAction() {
+		return action != null ? action.parsedAction() : ViewerAction.UNKNOWN;
+	}
 }
+
