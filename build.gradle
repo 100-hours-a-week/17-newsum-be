@@ -4,7 +4,8 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.flywaydb.flyway' version '9.22.3'
     id 'org.ec4j.editorconfig' version '0.0.3'
-    id 'java-test-fixtures' // test fixture 를 사용하기 위한 플러그인 추가
+    id 'java-test-fixtures'
+    id 'jacoco' // ✅ JaCoCo 플러그인 추가
 }
 
 group = 'com.akatsuki'
@@ -88,7 +89,6 @@ dependencies {
     testImplementation "com.redis:testcontainers-redis:2.2.2"
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.2.1'
 
-
     // WireMock for OpenFeign testing
     testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock'
 }
@@ -100,20 +100,38 @@ editorconfig {
 // Querydsl 빌드 옵션 설정
 def generated = 'src/main/generated'
 
-// querydsl QClass 파일 생성 위치를 지정
 tasks.withType(JavaCompile) {
     options.getGeneratedSourceOutputDirectory().set(file(generated))
 }
 
-// java source set 에 querydsl QClass 위치 추가
 sourceSets {
     main.java.srcDirs += [generated]
 }
 
-// gradle clean 시에 QClass 디렉토리 삭제
 clean {
     delete file(generated)
 }
+
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// ✅ JaCoCo 설정 추가
+jacoco {
+    toolVersion = "0.8.10" // 원하는 버전
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.required = true
+        xml.required = true
+    }
+
+    executionData fileTree(dir: "$buildDir", includes: [
+            "jacoco/test.exec"
+    ])
+    sourceDirectories.setFrom files(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom files(sourceSets.main.output)
 }

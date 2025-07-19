@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
@@ -68,12 +67,12 @@ public class SseEmitterRepository {
 		removeClient(userId, clientId);
 	}
 
-	public Set<SseEmitter> getAllEmitters() {
-		return emitters.values().stream()
-			.flatMap(map -> map.values().stream())
-			.collect(Collectors.toSet());
-	}
-	
+	// public Set<SseEmitter> getAllEmitters() {
+	// 	return emitters.values().stream()
+	// 		.flatMap(map -> map.values().stream())
+	// 		.collect(Collectors.toSet());
+	// }
+
 	private void removeClient(String userId, String clientId) {
 		Map<String, SseEmitter> clients = emitters.get(userId);
 
