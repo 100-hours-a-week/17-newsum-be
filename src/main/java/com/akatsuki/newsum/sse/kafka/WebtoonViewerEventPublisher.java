@@ -40,7 +40,7 @@ public class WebtoonViewerEventPublisher {
 			return;
 		}
 		kafkaTemplate.send("webtoon-viewer",
-			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN")));
+			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("LEAVE")));
 		log.info("📡 Kafka 전송 leave 메서드  메서드 수행 완료: {}", key);
 	}
 }

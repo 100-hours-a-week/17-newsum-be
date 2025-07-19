@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import com.akatsuki.newsum.cache.ViewerEventDeduplicationCache;
-import com.akatsuki.newsum.sse.kafka.dto.ViewerActionString;
+import com.akatsuki.newsum.sse.kafka.dto.ViewerAction;
 import com.akatsuki.newsum.sse.kafka.dto.WebtoonViewerEvent;
 
 public class WebtoonViewerEventPublisherTest {
@@ -26,19 +26,26 @@ public class WebtoonViewerEventPublisherTest {
 	}
 
 	@Test
-	@DisplayName("JOIN - 중복 아님: Kafka 전송 수행")
-	void publishJoin_whenNotDuplicate_shouldSendKafka() {
-		Long webtoonId = 10L;
-		String clientId = "client-A";
-		String key = webtoonId + "-" + clientId + "-JOIN";
+	@DisplayName("LEAVE - 중복 아님: Kafka 전송 수행")
+	void publishLeave_whenNotDuplicate() {
+		// given
+		Long webtoonId = 11L;
+		String clientId = "client-B";
+		String key = webtoonId + "-" + clientId + "-LEAVE";
 
-		//중복이 아님을 명시
 		when(dedupCache.isDuplicate(key)).thenReturn(false);
 
-		publisher.publishJoin(webtoonId, clientId);
+		// when
+		publisher.publishLeave(webtoonId, clientId);
 
-		verify(kafkaTemplate).send("webtoon-viewer",
-			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN")));
+		// then
+		verify(kafkaTemplate).send(eq("webtoon-viewer"),
+			argThat((WebtoonViewerEvent event) ->
+				event.webtoonId().equals(webtoonId) &&
+					event.clientId().equals(clientId) &&
+					event.action().parsedAction().equals(ViewerAction.LEAVE)
+			)
+		);
 	}
 
 	@Test
@@ -58,16 +65,24 @@ public class WebtoonViewerEventPublisherTest {
 	@Test
 	@DisplayName("LEAVE - 중복 아님: Kafka 전송 수행")
 	void publishLeave_whenNotDuplicate_shouldSendKafka() {
+		// given
 		Long webtoonId = 11L;
 		String clientId = "client-B";
 		String key = webtoonId + "-" + clientId + "-LEAVE";
 
 		when(dedupCache.isDuplicate(key)).thenReturn(false);
 
+		// when
 		publisher.publishLeave(webtoonId, clientId);
 
-		verify(kafkaTemplate).send("webtoon-viewer",
-			new WebtoonViewerEvent(webtoonId, clientId, new ViewerActionString("JOIN")));
+		// then
+		verify(kafkaTemplate).send(eq("webtoon-viewer"),
+			argThat((WebtoonViewerEvent event) ->
+				event.webtoonId().equals(webtoonId) &&
+					event.clientId().equals(clientId) &&
+					event.action().equals("LEAVE")
+			)
+		);
 	}
 
 	@Test
