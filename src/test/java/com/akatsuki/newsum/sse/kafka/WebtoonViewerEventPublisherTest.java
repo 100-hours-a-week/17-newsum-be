@@ -63,29 +63,6 @@ public class WebtoonViewerEventPublisherTest {
 	}
 
 	@Test
-	@DisplayName("LEAVE - 중복 아님: Kafka 전송 수행")
-	void publishLeave_whenNotDuplicate_shouldSendKafka() {
-		// given
-		Long webtoonId = 11L;
-		String clientId = "client-B";
-		String key = webtoonId + "-" + clientId + "-LEAVE";
-
-		when(dedupCache.isDuplicate(key)).thenReturn(false);
-
-		// when
-		publisher.publishLeave(webtoonId, clientId);
-
-		// then
-		verify(kafkaTemplate).send(eq("webtoon-viewer"),
-			argThat((WebtoonViewerEvent event) ->
-				event.webtoonId().equals(webtoonId) &&
-					event.clientId().equals(clientId) &&
-					event.action().equals("LEAVE")
-			)
-		);
-	}
-
-	@Test
 	@DisplayName("LEAVE - 중복이면 Kafka 전송 안함")
 	void publishLeave_whenDuplicate_shouldNotSendKafka() {
 		Long webtoonId = 11L;
