@@ -1,4 +1,4 @@
-package com.akatsuki.newsum.domain.log.entity;
+package com.akatsuki.newsum.log.entity;
 
 import java.time.LocalDateTime;
 

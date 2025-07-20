@@ -1,7 +1,6 @@
-package com.akatsuki.newsum.domain.log.dto;
+package com.akatsuki.newsum.log.dto;
 
 public record WebtoonViewLogRequest(
-	String userId,
-	Long webtoonId
+	String clientId
 ) {
 }

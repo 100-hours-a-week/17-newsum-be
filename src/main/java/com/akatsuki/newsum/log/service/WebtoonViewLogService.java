@@ -1,11 +1,10 @@
-package com.akatsuki.newsum.domain.log.service;
+package com.akatsuki.newsum.log.service;
 
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
-import com.akatsuki.newsum.domain.log.dto.WebtoonViewLogRequest;
-import com.akatsuki.newsum.domain.log.entity.WebtoonViewLog;
+import com.akatsuki.newsum.log.entity.WebtoonViewLog;
 import com.akatsuki.newsum.log.repository.WebtoonViewLogRepository;
 
 @Service
@@ -17,10 +16,10 @@ public class WebtoonViewLogService {
 		this.logRepository = logRepository;
 	}
 
-	public void logView(WebtoonViewLogRequest request) {
+	public void logView(Long webtoonId, String userkey) {
 		WebtoonViewLog log = new WebtoonViewLog(
-			request.userId(),
-			request.webtoonId(),
+			userkey,
+			webtoonId,
 			LocalDateTime.now()
 		);
 		logRepository.save(log);
