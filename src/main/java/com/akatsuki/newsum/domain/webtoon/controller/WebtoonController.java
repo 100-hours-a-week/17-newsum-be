@@ -217,7 +217,6 @@ public class WebtoonController {
 		@AuthenticationPrincipal UserDetailsImpl userDetails
 	) {
 		Long userId = getUserId(userDetails);
-		//비로그인,로그인사용자 둘다 허용하도록 함
 		String userkey = (userId != null) ? String.valueOf(userId) : "anonymous:" + request.clientId();
 		webtoonViewLogService.logView(webtoonId, userkey);
 
