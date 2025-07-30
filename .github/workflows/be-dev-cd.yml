@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [ self-hosted, linux, X64 ] 
+    runs-on: [ self-hosted, linux, X64, shared ]
 
     steps:
       - uses: actions/checkout@v3
@@ -99,6 +99,7 @@ jobs:
           
           for IP in ${{ steps.fetch.outputs.ips }}; do
             echo "🚀 배포 중: $IP"
+            echo "SSH키 경로 : $SSH_KEY_PATH" 
 
             # Self-hosted-runner 내부 키 경로
             ssh -o StrictHostKeyChecking=no -i $SSH_KEY_PATH ubuntu@$IP <<-EOF

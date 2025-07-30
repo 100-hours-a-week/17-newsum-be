@@ -67,6 +67,12 @@ public class SseEmitterRepository {
 		removeClient(userId, clientId);
 	}
 
+	// public Set<SseEmitter> getAllEmitters() {
+	// 	return emitters.values().stream()
+	// 		.flatMap(map -> map.values().stream())
+	// 		.collect(Collectors.toSet());
+	// }
+
 	private void removeClient(String userId, String clientId) {
 		Map<String, SseEmitter> clients = emitters.get(userId);
 

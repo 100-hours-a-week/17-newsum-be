@@ -13,10 +13,23 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+  kafka: # ✅ [수정한 부분 - Kafka 추가]
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:newsum-like-consumer}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: '*'
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 logging:
   level:
     org:
       apache:
         coyote:
-          http11: trace
-com.akatsuki.newsum: debug  # ← 패키지 경로에 맞게 설정
+          http11: info
+    com.akatsuki.newsum: info  # ← 패키지 경로에 맞게 설정

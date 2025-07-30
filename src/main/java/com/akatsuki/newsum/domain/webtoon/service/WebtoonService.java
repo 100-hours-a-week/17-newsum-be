@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +34,6 @@ import com.akatsuki.newsum.domain.user.entity.User;
 import com.akatsuki.newsum.domain.user.repository.UserRepository;
 import com.akatsuki.newsum.domain.user.service.KeywordService;
 import com.akatsuki.newsum.domain.webtoon.dto.AiAuthorInfoDto;
-import com.akatsuki.newsum.domain.webtoon.dto.CreateWebtoonReqeust;
 import com.akatsuki.newsum.domain.webtoon.dto.TodayWebtoonsResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonCardDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonDetailResponse;
@@ -40,6 +41,7 @@ import com.akatsuki.newsum.domain.webtoon.dto.WebtoonLikeStatusDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonResponse;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSlideDto;
 import com.akatsuki.newsum.domain.webtoon.dto.WebtoonSourceDto;
+import com.akatsuki.newsum.domain.webtoon.dto.WebtoonStaticDto;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.Category;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.GenerationStatus;
 import com.akatsuki.newsum.domain.webtoon.entity.webtoon.ImageGenerationQueue;
@@ -80,7 +82,9 @@ public class WebtoonService {
 	private final CursorPaginationService cursorPaginationService;
 	private final ImageGenerationQueueRepository imageGenerationQueueRepository;
 	private final KeywordService keywordService;
+	private final WebtoonStaticService webtoonStaticService;
 
+	private final int BEFORE_RANDOM_REALTED_WEBTOON_SIZE = 10;
 	private final int RECENT_WEBTOON_LIMIT = 4;
 	private final int RELATED_CATEGORY_SIZE = 2;
 	private final int RELATED_AI_AUTHOR_SIZE = 2;
@@ -95,30 +99,36 @@ public class WebtoonService {
 			.toList();
 	}
 
+	@Cacheable(value = "webtoon:content", key = "#webtoonId")
 	public WebtoonResponse getWebtoon(Long webtoonId, Long userId) {
-		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+		//Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
+
+		Optional<Webtoon> webtoonOpt = findWebtoonWithAiAuthorById(webtoonId);
+
+		if (webtoonOpt.isEmpty()) {
+			return null;
+		}
+
+		WebtoonStaticDto staticDto = webtoonStaticService.getCachedWebtoonStaticInfo(webtoonId);
 
 		WebtoonLikeStatusDto likeStatus = getWebtoonLikeStatus(webtoonId, userId);
 		boolean isLiked = likeStatus.liked();
 		long likeCount = likeStatus.likeCount();
 
-		boolean isBookmarked = false;
+		boolean isBookmarked =
+			userId != null && webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
 
-		if (userId != null) {
-			isBookmarked = webtoonFavoriteRepository.existsByWebtoonIdAndUserId(webtoonId, userId);
-
-		}
 		return new WebtoonResponse(
-			webtoon.getId(),
-			webtoon.getThumbnailImageUrl(),
-			webtoon.getTitle(),
-			mapWebToonSlides(webtoon),
-			mapAiAuthorToAiAuthorInfoDto(webtoon.getAiAuthor()),
+			staticDto.id(),
+			staticDto.thumbnailImageUrl(),
+			staticDto.title(),
+			staticDto.slides(),
+			staticDto.authorInfo(),
 			isLiked,
 			isBookmarked,
 			likeCount,
-			webtoon.getViewCount(),
-			webtoon.getCreatedAt()
+			staticDto.viewCount(),
+			staticDto.createdAt()
 		);
 	}
 
@@ -142,54 +152,31 @@ public class WebtoonService {
 		webtoon.increaseViewCount();
 	}
 
+	//@Cacheable(value = "webtoon:detail", key = "#webtoonId")
 	public WebtoonDetailResponse getWebtoonDetail(Long webtoonId) {
 		Webtoon webtoon = findWebtoonWithAiAuthorByIdOrThrow(webtoonId);
 
 		List<WebtoonCardDto> relatedNews = fetchRelatedNews(webtoon);
-
 		List<WebtoonSourceDto> sources = getNewsSources(webtoon);
-
 		LocalDateTime createdAt = webtoon.getCreatedAt();
-
 		Long commentCount = webtoon.getParentCommentCount();
 
-		return new WebtoonDetailResponse(sources,
+		return new WebtoonDetailResponse(
+			sources,
 			relatedNews,
 			createdAt,
-			commentCount);
+			commentCount
+		);
 	}
 
-	@Transactional
-	public void createWebtoon(CreateWebtoonReqeust request) {
-		AiAuthor aiAuthor = findAiAuthorById(request.aiAuthorId());
-
-		Webtoon webtoon = new Webtoon(aiAuthor,
-			Category.valueOf(request.category()),
-			request.title(),
-			request.content(),
-			request.thumbnailImageUrl());
-
-		Webtoon save = webtoonRepository.save(webtoon);
-
-		List<NewsSource> newsSources = request.sourceNews().stream()
-			.map(newsSourceDto -> new NewsSource(save, newsSourceDto.headline(), newsSourceDto.url()))
-			.toList();
-
-		List<WebtoonDetail> webtoonDetails = request.slides().stream()
-			.map(webtoonSlideDto -> new WebtoonDetail(save, webtoonSlideDto.imageUrl(), webtoonSlideDto.content(),
-				webtoonSlideDto.slideSeq()))
-			.toList();
-
-		webtoonDetailRepository.saveAll(webtoonDetails);
-		newsSourceRepository.saveAll(newsSources);
-	}
-
+	@Cacheable(value = "webtoon:top3:today", key = "'top3'")
 	public List<WebtoonCardDto> getTop3TodayByViewCount() {
 		return webtoonRepository.findTop3TodayByViewCount().stream()
 			.map(this::mapToCardDto)
 			.toList();
 	}
 
+	@Cacheable(value = "webtoon:today", key = "'todaywebtoons'")
 	public List<WebtoonCardDto> getTodayNewsCards() {
 		return webtoonRepository.findTodayNewsTop3().stream()
 			.map(this::mapToCardDto)
@@ -204,6 +191,7 @@ public class WebtoonService {
 		return new TodayWebtoonsResponse(dtos);
 	}
 
+	@Cacheable(value = "webtoon:category:top3", key = "'all'")
 	public Map<String, List<WebtoonCardDto>> getWebtoonsByCategoryLimit3() {
 		Map<String, List<WebtoonCardDto>> result = new LinkedHashMap<>();
 		for (Category category : Category.values()) {
@@ -311,13 +299,15 @@ public class WebtoonService {
 
 	@Transactional
 	public void saveimageprompts(ImageGenerationApiRequest request) {
+		Category category = request.category().toEnumOrElse(Category.IT);
+
 		ImageGenerationQueue entity = ImageGenerationQueue.builder()
 			.workId(request.workId())
 			.aiAuthorId(request.aiAuthorId())
 			.title(request.title())
 			.content(request.content())
 			.keyword(request.keyword())
-			.category(request.category())
+			.category(category)
 			.reportUrl(request.reportUrl())
 			.description1(request.description1())
 			.description2(request.description2())
@@ -351,6 +341,11 @@ public class WebtoonService {
 
 		Webtoon webtoon = mapToWebtoonEntity(queue, parseThumbnailImage(imageLinks));
 		List<WebtoonDetail> details = mapToWebtoonDetails(webtoon, descriptions, parseImageDescriptions(imageLinks));
+
+		String reportUrl = queue.getReportUrl();
+		NewsSource source = new NewsSource(null, "뉴스요약보고서", reportUrl);
+		webtoon.addNewsSource(source);
+
 		webtoonRepository.save(webtoon);
 		webtoonDetailRepository.saveAll(details);
 		queue.completed();
@@ -401,32 +396,45 @@ public class WebtoonService {
 	}
 
 	private List<WebtoonCardDto> fetchRelatedNews(Webtoon webtoon) {
-		List<Webtoon> webtoonByCategory = webtoonRepository.findWebtoonByCategory(webtoon.getCategory());
-		List<Webtoon> webtoonByAiAuthor = webtoonRepository.findWebtoonByAiAuthor(webtoon.getAiAuthor());
+		List<WebtoonCardDto> relatedNews = new ArrayList<>();
 
-		webtoonByCategory.remove(webtoon);
-		webtoonByAiAuthor.remove(webtoon);
+		// 1-1. 카테고리 기반 연관 웹툰을 조회수 기준으로 10개 가져옴
+		List<Webtoon> top10byCategory = webtoonRepository.findTop10WebtoonsByCategory(
+			webtoon.getCategory(),
+			webtoon.getId(),
+			PageRequest.of(0, BEFORE_RANDOM_REALTED_WEBTOON_SIZE)
+		);
 
-		webtoonByAiAuthor = removeDuplicateWebtoons(webtoonByAiAuthor, webtoonByCategory);
+		// 1-2. 가져온 웹툰 10개를 랜덤 돌림
+		Collections.shuffle(top10byCategory);
 
-		int aiAuthorCount = Math.min(webtoonByAiAuthor.size(), RELATED_AI_AUTHOR_SIZE);
-		int categoryCount = Math.min(webtoonByCategory.size(), RELATED_NEWS_SIZE - aiAuthorCount);
+		// 1-3. 그 중 2개를 뽑아서 relatedNews로 선택
+		List<Webtoon> byCategory = top10byCategory.stream()
+			.limit(RELATED_CATEGORY_SIZE)
+			.toList();
 
-		Collections.shuffle(webtoonByCategory);
-		Collections.shuffle(webtoonByAiAuthor);
+		relatedNews.addAll(byCategory.stream().map(this::mapToCardDto).toList());
 
-		List<WebtoonCardDto> result = new ArrayList<>();
-		result.addAll(webtoonByCategory.stream()
-			.limit(categoryCount)
-			.map(this::mapWebToonCardDto)
-			.toList());
+		// 2-1. 이미 가져온 웹툰 ID 제외하고 작가 기반 연관 웹툰 10개 가져옴
+		List<Long> excludeIds = byCategory.stream().map(Webtoon::getId).toList();
+		List<Webtoon> top10byAiAuthor = webtoonRepository.findTop10WebtoonsByAiAuthor(
+			webtoon.getAiAuthor(),
+			webtoon.getId(),
+			excludeIds.isEmpty() ? List.of(-1L) : excludeIds,
+			PageRequest.of(0, BEFORE_RANDOM_REALTED_WEBTOON_SIZE)
+		);
 
-		result.addAll(webtoonByAiAuthor.stream()
-			.limit(aiAuthorCount)
-			.map(this::mapWebToonCardDto)
-			.toList());
+		// 2-2. 가져운 웹툰 10개를 랜덤 돌림
+		Collections.shuffle(top10byAiAuthor);
 
-		return result;
+		// 2-3. 그 중 2개를 뽑아서 relatedNews로 선택
+		List<Webtoon> byAiAuthor = top10byAiAuthor.stream()
+			.limit(RELATED_AI_AUTHOR_SIZE)
+			.toList();
+
+		relatedNews.addAll(byAiAuthor.stream().map(this::mapToCardDto).toList());
+
+		return relatedNews;
 	}
 
 	private List<Webtoon> removeDuplicateWebtoons(List<Webtoon> targetWebtoons, List<Webtoon> toRemoveWebtoons) {
@@ -474,6 +482,10 @@ public class WebtoonService {
 			.orElseThrow(WebtoonNotFoundException::new);
 	}
 
+	private Optional<Webtoon> findWebtoonWithAiAuthorById(Long webtoonId) {
+		return webtoonRepository.findWebtoonAndAiAuthorById(webtoonId);
+	}
+
 	private Webtoon findWebtoonWithNewSourceById(Long webtoonId) {
 		return webtoonRepository.findWebtoonAndNewsSourceById(webtoonId)
 			.orElseThrow(WebtoonNotFoundException::new);
@@ -509,7 +521,7 @@ public class WebtoonService {
 
 		return new Webtoon(
 			aiAuthor,
-			Category.from(queue.getCategory()),
+			queue.getCategory(),
 			queue.getTitle(),
 			queue.getContent(),
 			thumbnailImageUrl

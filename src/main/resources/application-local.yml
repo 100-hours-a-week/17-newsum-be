@@ -14,9 +14,9 @@ spring:
       port: ${REDIS_PORT:6379}
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
-      group-id: newsum-like-consumer
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:newsum-like-consumer}
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
@@ -31,5 +31,5 @@ logging:
     org:
       apache:
         coyote:
-          http11: trace
-    com.akatsuki.newsum: debug  # ← 패키지 경로에 맞게 설정
+          http11: info
+    com.akatsuki.newsum: info  # ← 패키지 경로에 맞게 설정

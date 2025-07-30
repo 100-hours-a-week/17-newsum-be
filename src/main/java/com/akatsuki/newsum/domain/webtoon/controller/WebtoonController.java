@@ -34,6 +34,8 @@ import com.akatsuki.newsum.domain.webtoon.dto.WebtoonTopResponse;
 import com.akatsuki.newsum.domain.webtoon.service.WebtoonService;
 import com.akatsuki.newsum.extern.dto.ImageGenerationApiRequest;
 import com.akatsuki.newsum.extern.dto.ImageGenerationCallbackRequest;
+import com.akatsuki.newsum.log.dto.WebtoonViewLogRequest;
+import com.akatsuki.newsum.log.service.WebtoonViewLogService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,7 @@ public class WebtoonController {
 	private final WebtoonService webtoonService;
 	private final CursorPaginationService cursorPaginationService;
 	private final NotificationUseCase notificationUseCase;
+	private final WebtoonViewLogService webtoonViewLogService;
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<WebtoonListResponse>> getWebtoons(
@@ -205,6 +208,21 @@ public class WebtoonController {
 	) {
 		TodayWebtoonsResponse response = webtoonService.getAllTodayNewsCards();
 		return ResponseEntity.ok(ApiResponse.success(WEBTOON_TODAY_SUCCESS, response));
+	}
+
+	@PostMapping("/{webtoonId}/logs")
+	public ResponseEntity<ApiResponse> logWebtoons(
+		@PathVariable Long webtoonId,
+		@RequestBody WebtoonViewLogRequest request,
+		@AuthenticationPrincipal UserDetailsImpl userDetails
+	) {
+		Long userId = getUserId(userDetails);
+		String userkey = (userId != null) ? String.valueOf(userId) : "anonymous:" + request.clientId();
+		webtoonViewLogService.logView(webtoonId, userkey);
+
+		return ResponseEntity.ok(
+			ApiResponse.success(ResponseCodeAndMessage.WEBTOON_VIEW_LOGGED_SUCCESS, null)
+		);
 	}
 
 	private Long getUserId(

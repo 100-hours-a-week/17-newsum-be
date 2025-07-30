@@ -41,9 +41,13 @@ public class ImageGenerationQueue {
 
 	@Column(name = "title")
 	private String title;
+	
+	//@Column(name = "category")
+	//private String category;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "category")
-	private String category;
+	private Category category;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "keyword", columnDefinition = "jsonb")
